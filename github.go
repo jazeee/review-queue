@@ -13,7 +13,7 @@ const searchQuery = `query($q: String!, $after: String) {
     issueCount
     pageInfo { hasNextPage endCursor }
     nodes { ... on PullRequest {
-      number title url state isDraft reviewDecision createdAt updatedAt headRefOid
+      number title url state isDraft reviewDecision createdAt updatedAt mergedAt headRefOid
       author { login }
       reviewRequests(first: 30) { nodes { requestedReviewer { __typename ... on User { login } ... on Team { slug } } } }
       timelineItems(last: 100, itemTypes: [REVIEW_REQUESTED_EVENT, REVIEW_REQUEST_REMOVED_EVENT]) { nodes { __typename
@@ -43,6 +43,7 @@ type pullRequestPayload struct {
 	ReviewDecision string        `json:"reviewDecision"`
 	CreatedAt      time.Time     `json:"createdAt"`
 	UpdatedAt      time.Time     `json:"updatedAt"`
+	MergedAt       *time.Time    `json:"mergedAt"`
 	HeadRefOid     string        `json:"headRefOid"`
 	Author         *actorPayload `json:"author"`
 	ReviewRequests struct {
@@ -116,6 +117,9 @@ func convertPullRequest(payload pullRequestPayload) PullRequest {
 		CreatedAt:      payload.CreatedAt,
 		UpdatedAt:      payload.UpdatedAt,
 		HeadOid:        payload.HeadRefOid,
+	}
+	if payload.MergedAt != nil {
+		pullRequest.MergedAt = *payload.MergedAt
 	}
 	switch {
 	case payload.State == "MERGED":

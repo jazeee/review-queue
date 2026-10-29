@@ -53,6 +53,7 @@ type PullRequest struct {
 	ReviewDecision   string           `json:"reviewDecision"`
 	CreatedAt        time.Time        `json:"createdAt"`
 	UpdatedAt        time.Time        `json:"updatedAt"`
+	MergedAt         time.Time        `json:"mergedAt"`
 	HeadOid          string           `json:"headOid"`
 	PendingReviewers []Reviewer       `json:"pendingReviewers"`
 	RequestEvents    []RequestEvent   `json:"requestEvents"`

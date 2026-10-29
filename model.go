@@ -59,6 +59,7 @@ type Model struct {
 	flash         string
 	confirmAll    bool
 	undo          map[int]time.Time
+	rescanQueued  bool
 }
 
 func NewModel(repository string, window time.Duration) Model {
@@ -130,6 +131,9 @@ func (model *Model) rebuildRows() {
 			delete(model.cache.PullRequests, number)
 			continue
 		}
+		if pullRequest.State == PullRequestClosed || (pullRequest.State == PullRequestMerged && time.Since(pullRequest.MergedAt) > 5*24*time.Hour) {
+			continue
+		}
 		if row, ok := BuildQueueRow(pullRequest, model.cache.Identity, model.dismissals[number]); ok {
 			model.allRows = append(model.allRows, row)
 		}
@@ -149,6 +153,9 @@ func (model *Model) rebuildRows() {
 
 func belongsToView(row QueueRow, view ViewKind) bool {
 	isMine := row.MyStatus == MyStatusAuthor
+	if !isMine && row.PullRequest.State == PullRequestDraft {
+		return false
+	}
 	switch view {
 	case ViewInbox:
 		return row.Unread
@@ -280,6 +287,11 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if saveError := model.store.SaveCache(model.cache); saveError != nil {
 			model.lastError = saveError.Error()
+		}
+		if model.rescanQueued {
+			model.rescanQueued = false
+			model.cache.ScannedThrough = time.Time{}
+			model.startScan()
 		}
 		return model, tea.Batch(
 			model.waitForEvent(),
@@ -436,8 +448,13 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "r":
 		model.startScan()
 	case "R":
-		model.cache.ScannedThrough = time.Time{}
-		model.startScan()
+		if model.scanning {
+			model.rescanQueued = true
+			model.flash = "full rescan queued after the current scan"
+		} else {
+			model.cache.ScannedThrough = time.Time{}
+			model.startScan()
+		}
 	case "m":
 		model.mouseEnabled = !model.mouseEnabled
 		if model.mouseEnabled {

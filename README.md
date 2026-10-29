@@ -22,6 +22,10 @@ incrementally every 2 minutes. State lives in
 
 ## Views
 
+Closed PRs, and PRs merged more than 5 days ago, are hidden everywhere. Drafts are
+hidden except in Mine.
+
+
 | View    | Shows                                                                  |
 |---------|------------------------------------------------------------------------|
 | Inbox   | Unread: you have not reviewed since the latest request, and not marked seen |
@@ -53,6 +57,6 @@ newer review request makes it unread again, even after a local dismissal.
 | `u` | undo the last seen/all-seen |
 | `/` | filter (regex, case-insensitive; literal fallback); `esc` clears |
 | `y` | copy the PR URL |
-| `r` / `R` | refresh now / rescan the whole window |
+| `r` / `R` | refresh now / rescan the whole window (queued if a scan is running) |
 | `m` | toggle mouse capture |
 | `q` | quit |
