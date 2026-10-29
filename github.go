@@ -11,6 +11,7 @@ import (
 const pullRequestFields = `fragment PullRequestFields on PullRequest {
   number title url state isDraft reviewDecision createdAt updatedAt mergedAt baseRefName headRefOid additions deletions
   author { login }
+  labels(first: 20) { nodes { name } }
   reviewRequests(first: 30) { nodes { requestedReviewer { __typename ... on User { login } ... on Team { slug } } } }
   timelineItems(last: 100, itemTypes: [REVIEW_REQUESTED_EVENT, REVIEW_REQUEST_REMOVED_EVENT]) { nodes { __typename
     ... on ReviewRequestedEvent { createdAt actor { login } requestedReviewer { __typename ... on User { login } ... on Team { slug } } }
@@ -52,6 +53,11 @@ type pullRequestPayload struct {
 	Deletions      int           `json:"deletions"`
 	HeadRefOid     string        `json:"headRefOid"`
 	Author         *actorPayload `json:"author"`
+	Labels         struct {
+		Nodes []struct {
+			Name string `json:"name"`
+		} `json:"nodes"`
+	} `json:"labels"`
 	ReviewRequests struct {
 		Nodes []struct {
 			RequestedReviewer *reviewerPayload `json:"requestedReviewer"`
@@ -139,6 +145,9 @@ func convertPullRequest(payload pullRequestPayload) PullRequest {
 		pullRequest.State = PullRequestDraft
 	default:
 		pullRequest.State = PullRequestOpen
+	}
+	for _, node := range payload.Labels.Nodes {
+		pullRequest.Labels = append(pullRequest.Labels, node.Name)
 	}
 	for _, node := range payload.ReviewRequests.Nodes {
 		if reviewer, ok := convertReviewer(node.RequestedReviewer); ok {

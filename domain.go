@@ -1,6 +1,9 @@
 package main
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type PullRequestState string
 
@@ -58,6 +61,7 @@ type PullRequest struct {
 	BaseRef          string           `json:"baseRef"`
 	Additions        int              `json:"additions"`
 	Deletions        int              `json:"deletions"`
+	Labels           []string         `json:"labels"`
 	PendingReviewers []Reviewer       `json:"pendingReviewers"`
 	RequestEvents    []RequestEvent   `json:"requestEvents"`
 	Reviews          []Review         `json:"reviews"`
@@ -74,6 +78,15 @@ func (identity Identity) owns(reviewer Reviewer) bool {
 	}
 	for _, team := range identity.Teams {
 		if team == reviewer.Name {
+			return true
+		}
+	}
+	return false
+}
+
+func (pullRequest PullRequest) hasLabel(name string) bool {
+	for _, label := range pullRequest.Labels {
+		if strings.EqualFold(label, name) {
 			return true
 		}
 	}
