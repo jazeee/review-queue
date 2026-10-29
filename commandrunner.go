@@ -3,10 +3,8 @@ package main
 import (
 	"context"
 	"errors"
-	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -51,21 +49,6 @@ func RunCommand(timeout time.Duration, workingDirectory string, name string, arg
 		result.ExitCode = 1
 	}
 	return result
-}
-
-func OpenUrl(url string) error {
-	command := exec.Command("xdg-open", url)
-	devNull, openError := os.OpenFile(os.DevNull, os.O_RDWR, 0)
-	if openError == nil {
-		defer devNull.Close()
-		command.Stdin, command.Stdout, command.Stderr = devNull, devNull, devNull
-	}
-	command.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-	if startError := command.Start(); startError != nil {
-		return startError
-	}
-	go command.Wait()
-	return nil
 }
 
 // CopyToSystemClipboard discards tool output because wl-copy forks a daemon that would hold the pipe open.

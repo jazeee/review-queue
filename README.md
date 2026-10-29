@@ -16,6 +16,12 @@ review-queue                       # VivaaHealth/vivaa, 14 days
 review-queue --repo owner/name --days 7
 ```
 
+`p` creates (or reuses) a worktree of `--checkout` (default `~/code/notable/vivaa`)
+under `<primary>/worktrees/` on the PR head branch, or on `pr-<number>` from
+`pull/<number>/head` for forks and deleted branches, then opens pi there through
+`~/.local/bin/pi-worktree-session.sh` (from worktree-dashboard) in `$TERMINAL`,
+using `ptyxis-new-window.sh` for ptyxis when present.
+
 The first run backfills in day-sized windows (~2 minutes); after that it polls
 incrementally 30 seconds after each scan finishes. State lives in
 `~/.local/state/review-queue/<owner>-<repo>/` (`cache.json`, `dismissed.json`).
@@ -58,6 +64,7 @@ newer review request makes it unread again, even after a local dismissal.
 | `j`/`k` `↑`/`↓` `pgup`/`pgdn` `g`/`G` | move |
 | `tab` / `shift+tab` / `1`–`4` | switch view |
 | `o` / `enter` | open the PR in the browser |
+| `p` | open pi (tmux split, new terminal) in a worktree on the PR head branch |
 | `space` | toggle seen (local dismissal) |
 | `A` `A` | mark every visible row seen |
 | `u` | undo the last seen/all-seen |

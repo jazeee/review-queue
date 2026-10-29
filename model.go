@@ -30,6 +30,11 @@ type identityMsg struct {
 
 type pollTickMsg struct{}
 
+type piLaunchedMsg struct {
+	Text string
+	Err  error
+}
+
 type watchedRefreshedMsg struct {
 	PullRequests []PullRequest
 	Err          error
@@ -38,6 +43,7 @@ type clockTickMsg struct{}
 
 type Model struct {
 	repository string
+	checkout   string
 	window     time.Duration
 	store      Store
 	cache      Cache
@@ -74,12 +80,13 @@ type Model struct {
 	watched map[int]time.Time
 }
 
-func NewModel(repository string, window time.Duration) Model {
+func NewModel(repository string, checkout string, window time.Duration) Model {
 	store := NewStore(repository)
 	searchInput := textinput.New()
 	searchInput.Prompt = "/"
 	model := Model{
 		repository:   repository,
+		checkout:     checkout,
 		window:       window,
 		store:        store,
 		cache:        store.LoadCache(),
@@ -360,6 +367,14 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		model.startScan()
 		return model, model.refreshWatched()
 
+	case piLaunchedMsg:
+		if message.Err != nil {
+			model.lastError = message.Err.Error()
+		} else {
+			model.flash = message.Text
+		}
+		return model, nil
+
 	case watchedRefreshedMsg:
 		if message.Err != nil {
 			model.lastError = message.Err.Error()
@@ -493,6 +508,20 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "o", "enter":
 		if hasRow {
 			model.openPullRequest(row.PullRequest)
+		}
+	case "p":
+		if !hasRow {
+			return model, nil
+		}
+		pullRequest := row.PullRequest
+		model.flash = fmt.Sprintf("preparing a worktree for #%d…", pullRequest.Number)
+		return model, func() tea.Msg {
+			path, worktreeError := EnsurePullRequestWorktree(model.checkout, pullRequest)
+			if worktreeError != nil {
+				return piLaunchedMsg{Err: worktreeError}
+			}
+			terminalName, launchError := LaunchPiInTerminal(path)
+			return piLaunchedMsg{Text: fmt.Sprintf("opened pi in %s: %s", terminalName, path), Err: launchError}
 		}
 	case "y":
 		if hasRow {

@@ -48,23 +48,25 @@ type Review struct {
 }
 
 type PullRequest struct {
-	Number           int              `json:"number"`
-	Title            string           `json:"title"`
-	Url              string           `json:"url"`
-	Author           string           `json:"author"`
-	State            PullRequestState `json:"state"`
-	ReviewDecision   string           `json:"reviewDecision"`
-	CreatedAt        time.Time        `json:"createdAt"`
-	UpdatedAt        time.Time        `json:"updatedAt"`
-	MergedAt         time.Time        `json:"mergedAt"`
-	HeadOid          string           `json:"headOid"`
-	BaseRef          string           `json:"baseRef"`
-	Additions        int              `json:"additions"`
-	Deletions        int              `json:"deletions"`
-	Labels           []string         `json:"labels"`
-	PendingReviewers []Reviewer       `json:"pendingReviewers"`
-	RequestEvents    []RequestEvent   `json:"requestEvents"`
-	Reviews          []Review         `json:"reviews"`
+	Number            int              `json:"number"`
+	Title             string           `json:"title"`
+	Url               string           `json:"url"`
+	Author            string           `json:"author"`
+	State             PullRequestState `json:"state"`
+	ReviewDecision    string           `json:"reviewDecision"`
+	CreatedAt         time.Time        `json:"createdAt"`
+	UpdatedAt         time.Time        `json:"updatedAt"`
+	MergedAt          time.Time        `json:"mergedAt"`
+	HeadOid           string           `json:"headOid"`
+	BaseRef           string           `json:"baseRef"`
+	HeadRef           string           `json:"headRef"`
+	IsCrossRepository bool             `json:"isCrossRepository"`
+	Additions         int              `json:"additions"`
+	Deletions         int              `json:"deletions"`
+	Labels            []string         `json:"labels"`
+	PendingReviewers  []Reviewer       `json:"pendingReviewers"`
+	RequestEvents     []RequestEvent   `json:"requestEvents"`
+	Reviews           []Review         `json:"reviews"`
 }
 
 type Identity struct {

@@ -9,7 +9,7 @@ import (
 )
 
 const pullRequestFields = `fragment PullRequestFields on PullRequest {
-  number title url state isDraft reviewDecision createdAt updatedAt mergedAt baseRefName headRefOid additions deletions
+  number title url state isDraft reviewDecision createdAt updatedAt mergedAt baseRefName headRefName headRefOid isCrossRepository additions deletions
   author { login }
   labels(first: 20) { nodes { name } }
   reviewRequests(first: 30) { nodes { requestedReviewer { __typename ... on User { login } ... on Team { slug } } } }
@@ -49,6 +49,8 @@ type pullRequestPayload struct {
 	UpdatedAt      time.Time     `json:"updatedAt"`
 	MergedAt       *time.Time    `json:"mergedAt"`
 	BaseRefName    string        `json:"baseRefName"`
+	HeadRefName    string        `json:"headRefName"`
+	IsCrossRepo    bool          `json:"isCrossRepository"`
 	Additions      int           `json:"additions"`
 	Deletions      int           `json:"deletions"`
 	HeadRefOid     string        `json:"headRefOid"`
@@ -121,17 +123,19 @@ func convertReviewer(payload *reviewerPayload) (Reviewer, bool) {
 
 func convertPullRequest(payload pullRequestPayload) PullRequest {
 	pullRequest := PullRequest{
-		Number:         payload.Number,
-		Title:          payload.Title,
-		Url:            payload.Url,
-		Author:         loginOf(payload.Author),
-		ReviewDecision: payload.ReviewDecision,
-		CreatedAt:      payload.CreatedAt,
-		UpdatedAt:      payload.UpdatedAt,
-		HeadOid:        payload.HeadRefOid,
-		BaseRef:        payload.BaseRefName,
-		Additions:      payload.Additions,
-		Deletions:      payload.Deletions,
+		Number:            payload.Number,
+		Title:             payload.Title,
+		Url:               payload.Url,
+		Author:            loginOf(payload.Author),
+		ReviewDecision:    payload.ReviewDecision,
+		CreatedAt:         payload.CreatedAt,
+		UpdatedAt:         payload.UpdatedAt,
+		HeadOid:           payload.HeadRefOid,
+		BaseRef:           payload.BaseRefName,
+		HeadRef:           payload.HeadRefName,
+		IsCrossRepository: payload.IsCrossRepo,
+		Additions:         payload.Additions,
+		Deletions:         payload.Deletions,
 	}
 	if payload.MergedAt != nil {
 		pullRequest.MergedAt = *payload.MergedAt
