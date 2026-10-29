@@ -240,6 +240,9 @@ func (model Model) renderHeader() string {
 		}
 	}
 	left := strings.Join(tabs, " ")
+	if model.draftsOnly {
+		left += "  " + stylePending.Render("drafts only")
+	}
 	var status string
 	switch {
 	case model.scanning && model.scanTotal > 0:
@@ -289,7 +292,7 @@ func (model Model) View() string {
 	}
 	lines = append(lines, styleDetail.Width(model.width).Render(strings.Join(detail[:detailHeight-1], "\n")))
 
-	footer := styleDim.Render("o open · space seen · A all seen · u undo · / search · tab view · r refresh · y copy · m mouse · q quit")
+	footer := styleDim.Render("o open · space seen · A all seen · u undo · / search · tab view · d drafts · r refresh · y copy · m mouse · q quit")
 	switch {
 	case model.searching:
 		footer = model.searchInput.View()

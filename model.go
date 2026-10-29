@@ -66,6 +66,7 @@ type Model struct {
 	confirmAll    bool
 	undo          map[int]time.Time
 	rescanQueued  bool
+	draftsOnly    bool
 	// watched holds PRs recently opened in the browser, keyed to when they were opened.
 	watched map[int]time.Time
 }
@@ -191,16 +192,23 @@ func (model *Model) rebuildRows() {
 	model.applyFilter()
 }
 
-func belongsToView(row QueueRow, view ViewKind) bool {
+func belongsToView(row QueueRow, view ViewKind, draftsOnly bool) bool {
 	isMine := row.MyStatus == MyStatusAuthor
-	if !isMine && (row.PullRequest.State == PullRequestDraft || row.PullRequest.BaseRef != "main") {
+	isDraft := row.PullRequest.State == PullRequestDraft
+	if draftsOnly && !isDraft {
+		return false
+	}
+	if !draftsOnly && isDraft && !isMine {
+		return false
+	}
+	if !isMine && row.PullRequest.BaseRef != "main" {
 		return false
 	}
 	switch view {
 	case ViewInbox:
 		return row.Unread
 	case ViewWaiting:
-		return !isMine && row.PullRequest.State == PullRequestOpen && !row.Settled() && row.MyStatus != MyStatusReviewed
+		return !isMine && row.PullRequest.isOpen() && !row.Settled() && row.MyStatus != MyStatusReviewed
 	case ViewAll:
 		return !isMine
 	default:
@@ -211,7 +219,7 @@ func belongsToView(row QueueRow, view ViewKind) bool {
 func (model Model) countView(view ViewKind) int {
 	count := 0
 	for _, row := range model.allRows {
-		if belongsToView(row, view) {
+		if belongsToView(row, view, model.draftsOnly) {
 			count++
 		}
 	}
@@ -225,7 +233,7 @@ func (model *Model) applyFilter() {
 	}
 	model.rows = nil
 	for _, row := range model.allRows {
-		if !belongsToView(row, model.view) {
+		if !belongsToView(row, model.view, model.draftsOnly) {
 			continue
 		}
 		if model.searchPattern != nil && !model.searchPattern.MatchString(searchableText(row)) {
@@ -504,6 +512,10 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 			model.lastError = saveError.Error()
 		}
 		model.rebuildRows()
+	case "d":
+		model.draftsOnly = !model.draftsOnly
+		model.cursor, model.offset = 0, 0
+		model.applyFilter()
 	case "r":
 		model.startScan()
 	case "R":

@@ -61,6 +61,7 @@ newer review request makes it unread again, even after a local dismissal.
 | `space` | toggle seen (local dismissal) |
 | `A` `A` | mark every visible row seen |
 | `u` | undo the last seen/all-seen |
+| `d` | toggle between drafts only and the normal views |
 | `/` | filter (regex, case-insensitive; literal fallback); `esc` clears |
 | `y` | copy the PR URL |
 | `r` / `R` | refresh now / rescan the whole window (queued if a scan is running) |
