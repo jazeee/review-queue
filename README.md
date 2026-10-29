@@ -31,7 +31,7 @@ stacked PRs (base is not `main`) are hidden except in Mine.
 | Inbox   | Unread: you have not reviewed since the latest request, and not marked seen |
 | Waiting | Open PRs where a request to you or your team is still pending          |
 | All     | Every PR that requested you or your teams in the window                |
-| Mine    | PRs you authored, with their pending reviewers                         |
+| Mine    | Your unmerged PRs, with their pending reviewers                        |
 
 ## Columns
 

@@ -204,7 +204,7 @@ func belongsToView(row QueueRow, view ViewKind) bool {
 	case ViewAll:
 		return !isMine
 	default:
-		return isMine
+		return isMine && row.PullRequest.State != PullRequestMerged
 	}
 }
 
