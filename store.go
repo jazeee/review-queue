@@ -8,7 +8,11 @@ import (
 	"time"
 )
 
+// cacheVersion must be bumped whenever PullRequest gains a field, so older caches are rescanned.
+const cacheVersion = 2
+
 type Cache struct {
+	Version        int                 `json:"version"`
 	Identity       Identity            `json:"identity"`
 	ScannedThrough time.Time           `json:"scannedThrough"`
 	PullRequests   map[int]PullRequest `json:"pullRequests"`
@@ -52,8 +56,8 @@ func (store Store) write(name string, value any) error {
 func (store Store) LoadCache() Cache {
 	cache := Cache{PullRequests: map[int]PullRequest{}}
 	store.read("cache.json", &cache)
-	if cache.PullRequests == nil {
-		cache.PullRequests = map[int]PullRequest{}
+	if cache.Version != cacheVersion {
+		return Cache{Version: cacheVersion, Identity: cache.Identity, PullRequests: map[int]PullRequest{}}
 	}
 	return cache
 }
