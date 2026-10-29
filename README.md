@@ -36,7 +36,8 @@ stacked PRs (base is not `main`) are hidden except in Mine.
 ## Columns
 
 - **●** unread.
-- **Lines** additions + deletions, shaded green → yellow → red (1000+), then
+- **Lines** additions + deletions, black at ≤1, fading to green at 500,
+  then through yellow to red at 1000+, then
   **+** additions and **-** deletions.
 - **For** the requested targets that are yours (`@me` or team slugs).
   Yellow = still pending; ~~struck~~ = fulfilled by someone's review or removed.

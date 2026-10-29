@@ -36,14 +36,17 @@ var (
 			BorderForeground(colorAccent)
 )
 
-// sizeStyle shades green through yellow (100 lines) to red (1000+ lines) on a log scale.
+// sizeStyle is black up to 1 line, fades to green at 500 (log scale), then through yellow to red at 1000+.
 func sizeStyle(lines int) lipgloss.Style {
-	ratio := min(1, math.Log10(float64(lines)/10+1)/math.Log10(101))
-	red, green := 175.0, 135.0
-	if ratio < 0.5 {
-		red *= ratio * 2
-	} else {
-		green *= (1 - ratio) * 2
+	red, green := 0.0, 0.0
+	switch {
+	case lines <= 1:
+	case lines <= 500:
+		green = 135 * math.Log(float64(lines)) / math.Log(500)
+	default:
+		ratio := min(1, float64(lines-500)/500)
+		red = 175 * min(1, ratio*2)
+		green = 135 * min(1, (1-ratio)*2)
 	}
 	return lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("15")).
 		Background(lipgloss.Color(fmt.Sprintf("#%02x%02x00", int(red), int(green))))
