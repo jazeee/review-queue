@@ -22,8 +22,8 @@ incrementally 30 seconds after each scan finishes. State lives in
 
 ## Views
 
-Closed PRs, and PRs merged more than 5 days ago, are hidden everywhere. Drafts are
-hidden except in Mine.
+Closed PRs, and PRs merged more than 5 days ago, are hidden everywhere. Drafts and
+stacked PRs (base is not `main`) are hidden except in Mine.
 
 
 | View    | Shows                                                                  |

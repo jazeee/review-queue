@@ -192,7 +192,7 @@ func (model *Model) rebuildRows() {
 
 func belongsToView(row QueueRow, view ViewKind) bool {
 	isMine := row.MyStatus == MyStatusAuthor
-	if !isMine && row.PullRequest.State == PullRequestDraft {
+	if !isMine && (row.PullRequest.State == PullRequestDraft || row.PullRequest.BaseRef != "main") {
 		return false
 	}
 	switch view {
