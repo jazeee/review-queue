@@ -9,7 +9,7 @@ import (
 )
 
 // cacheVersion must be bumped whenever PullRequest gains a field, so older caches are rescanned.
-const cacheVersion = 3
+const cacheVersion = 4
 
 type Cache struct {
 	Version        int                 `json:"version"`

@@ -56,6 +56,8 @@ type PullRequest struct {
 	MergedAt         time.Time        `json:"mergedAt"`
 	HeadOid          string           `json:"headOid"`
 	BaseRef          string           `json:"baseRef"`
+	Additions        int              `json:"additions"`
+	Deletions        int              `json:"deletions"`
 	PendingReviewers []Reviewer       `json:"pendingReviewers"`
 	RequestEvents    []RequestEvent   `json:"requestEvents"`
 	Reviews          []Review         `json:"reviews"`

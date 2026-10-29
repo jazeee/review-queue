@@ -1,6 +1,11 @@
 package main
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"fmt"
+	"math"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 var (
 	colorYellow  = lipgloss.Color("3")
@@ -30,6 +35,19 @@ var (
 			Border(lipgloss.NormalBorder(), true, false, false, false).
 			BorderForeground(colorAccent)
 )
+
+// sizeStyle shades green through yellow (100 lines) to red (1000+ lines) on a log scale.
+func sizeStyle(lines int) lipgloss.Style {
+	ratio := min(1, math.Log10(float64(lines)/10+1)/math.Log10(101))
+	red, green := 175.0, 135.0
+	if ratio < 0.5 {
+		red *= ratio * 2
+	} else {
+		green *= (1 - ratio) * 2
+	}
+	return lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("15")).
+		Background(lipgloss.Color(fmt.Sprintf("#%02x%02x00", int(red), int(green))))
+}
 
 func stateStyle(state PullRequestState) lipgloss.Style {
 	switch state {

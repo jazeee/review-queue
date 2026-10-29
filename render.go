@@ -42,7 +42,7 @@ func renderCell(segments []segment, width int, selected bool) string {
 	var builder strings.Builder
 	remaining := width
 	paint := func(style lipgloss.Style, text string) {
-		if selected {
+		if _, unset := style.GetBackground().(lipgloss.NoColor); selected && unset {
 			style = style.Background(colorHighlight)
 		}
 		builder.WriteString(style.Render(text))
@@ -124,7 +124,7 @@ type column struct {
 }
 
 func (model Model) columns() []column {
-	columns := []column{{"", 1}, {"PR", 6}, {"Age", 4}, {"Author", 16}, {"State", 8}, {"For", 26}, {"Me", 8}}
+	columns := []column{{"", 1}, {"PR", 6}, {"Age", 4}, {"Author", 16}, {"State", 8}, {"Lines", 6}, {"+", 5}, {"-", 5}, {"For", 26}, {"Me", 8}}
 	used := 0
 	for _, entry := range columns {
 		used += entry.width + 1
@@ -157,6 +157,9 @@ func (model Model) renderRow(row QueueRow, selected bool) string {
 		{{formatAge(age), styleDim}},
 		{{pullRequest.Author, lipgloss.NewStyle()}},
 		renderState(pullRequest),
+		{{fmt.Sprintf("%5d ", pullRequest.Additions+pullRequest.Deletions), sizeStyle(pullRequest.Additions + pullRequest.Deletions)}},
+		{{fmt.Sprintf("%5d", pullRequest.Additions), styleGood}},
+		{{fmt.Sprintf("%5d", pullRequest.Deletions), styleBad}},
 		renderTargets(row),
 		{renderMyStatus(row)},
 		{{pullRequest.Title, titleStyle}},
@@ -176,8 +179,10 @@ func (model Model) renderDetail() []string {
 	pullRequest := row.PullRequest
 	lines := []string{
 		styleBold.Render(fmt.Sprintf("#%d %s", pullRequest.Number, pullRequest.Title)),
-		fmt.Sprintf("%s · %s · opened %s ago · %s", pullRequest.Author,
-			stateStyle(pullRequest.State).Render(string(pullRequest.State)), formatAge(pullRequest.CreatedAt), pullRequest.Url),
+		fmt.Sprintf("%s · %s · %s %s · opened %s ago · %s", pullRequest.Author,
+			stateStyle(pullRequest.State).Render(string(pullRequest.State)),
+			styleGood.Render(fmt.Sprintf("+%d", pullRequest.Additions)), styleBad.Render(fmt.Sprintf("-%d", pullRequest.Deletions)),
+			formatAge(pullRequest.CreatedAt), pullRequest.Url),
 	}
 	for _, target := range row.Targets {
 		name := "@" + target.Reviewer.Name

@@ -9,7 +9,7 @@ import (
 )
 
 const pullRequestFields = `fragment PullRequestFields on PullRequest {
-  number title url state isDraft reviewDecision createdAt updatedAt mergedAt baseRefName headRefOid
+  number title url state isDraft reviewDecision createdAt updatedAt mergedAt baseRefName headRefOid additions deletions
   author { login }
   reviewRequests(first: 30) { nodes { requestedReviewer { __typename ... on User { login } ... on Team { slug } } } }
   timelineItems(last: 100, itemTypes: [REVIEW_REQUESTED_EVENT, REVIEW_REQUEST_REMOVED_EVENT]) { nodes { __typename
@@ -48,6 +48,8 @@ type pullRequestPayload struct {
 	UpdatedAt      time.Time     `json:"updatedAt"`
 	MergedAt       *time.Time    `json:"mergedAt"`
 	BaseRefName    string        `json:"baseRefName"`
+	Additions      int           `json:"additions"`
+	Deletions      int           `json:"deletions"`
 	HeadRefOid     string        `json:"headRefOid"`
 	Author         *actorPayload `json:"author"`
 	ReviewRequests struct {
@@ -122,6 +124,8 @@ func convertPullRequest(payload pullRequestPayload) PullRequest {
 		UpdatedAt:      payload.UpdatedAt,
 		HeadOid:        payload.HeadRefOid,
 		BaseRef:        payload.BaseRefName,
+		Additions:      payload.Additions,
+		Deletions:      payload.Deletions,
 	}
 	if payload.MergedAt != nil {
 		pullRequest.MergedAt = *payload.MergedAt
