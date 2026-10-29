@@ -67,6 +67,9 @@ type Model struct {
 	undo          map[int]time.Time
 	rescanQueued  bool
 	draftsOnly    bool
+
+	lastClickNumber int
+	lastClickAt     time.Time
 	// watched holds PRs recently opened in the browser, keyed to when they were opened.
 	watched map[int]time.Time
 }
@@ -135,6 +138,14 @@ func (model Model) refreshWatched() tea.Cmd {
 	return func() tea.Msg {
 		pullRequests, fetchError := FetchPullRequests(model.repository, numbers)
 		return watchedRefreshedMsg{PullRequests: pullRequests, Err: fetchError}
+	}
+}
+
+// openPullRequest also watches the PR so a review submitted in the browser shows up quickly.
+func (model *Model) openPullRequest(pullRequest PullRequest) {
+	model.watched[pullRequest.Number] = time.Now()
+	if openError := OpenUrl(pullRequest.Url); openError != nil {
+		model.lastError = openError.Error()
 	}
 }
 
@@ -379,8 +390,15 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case message.Button == tea.MouseButtonLeft && message.Action == tea.MouseActionPress:
 			// Rows start below the tab bar and the column header.
-			if row := message.Y - 2; row >= 0 && row < model.tableHeight() {
+			if row := message.Y - 2; row >= 0 && row < model.tableHeight() && model.offset+row < len(model.rows) {
 				model.cursor = model.offset + row
+				number := model.rows[model.cursor].PullRequest.Number
+				if number == model.lastClickNumber && time.Since(model.lastClickAt) < 400*time.Millisecond {
+					model.openPullRequest(model.rows[model.cursor].PullRequest)
+					model.lastClickAt = time.Time{}
+				} else {
+					model.lastClickNumber, model.lastClickAt = number, time.Now()
+				}
 			}
 		}
 		model.clampCursor()
@@ -474,10 +492,7 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		model.applyFilter()
 	case "o", "enter":
 		if hasRow {
-			model.watched[row.PullRequest.Number] = time.Now()
-			if openError := OpenUrl(row.PullRequest.Url); openError != nil {
-				model.lastError = openError.Error()
-			}
+			model.openPullRequest(row.PullRequest)
 		}
 	case "y":
 		if hasRow {

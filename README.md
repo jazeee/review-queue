@@ -65,6 +65,6 @@ newer review request makes it unread again, even after a local dismissal.
 | `/` | filter (regex, case-insensitive; literal fallback); `esc` clears |
 | `y` | copy the PR URL |
 | `r` / `R` | refresh now / rescan the whole window (queued if a scan is running) |
-| click | select a row, or switch to a tab; the wheel moves the cursor |
+| click | select a row (double-click opens it), or switch to a tab; the wheel moves the cursor |
 | `m` | toggle mouse capture |
 | `q` | quit |
