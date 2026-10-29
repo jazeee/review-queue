@@ -17,7 +17,7 @@ review-queue --repo owner/name --days 7
 ```
 
 The first run backfills in day-sized windows (~2 minutes); after that it polls
-incrementally every 2 minutes. State lives in
+incrementally 30 seconds after each scan finishes. State lives in
 `~/.local/state/review-queue/<owner>-<repo>/` (`cache.json`, `dismissed.json`).
 
 ## Views

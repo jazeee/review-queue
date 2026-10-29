@@ -89,7 +89,7 @@ func (model Model) Init() tea.Cmd {
 			identity, identityError := FetchIdentity(organization)
 			return identityMsg{Identity: identity, Err: identityError}
 		},
-		tea.Tick(30*time.Second, func(time.Time) tea.Msg { return clockTickMsg{} }),
+		tea.Tick(time.Second, func(time.Time) tea.Msg { return clockTickMsg{} }),
 	)
 }
 
@@ -295,7 +295,7 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return model, tea.Batch(
 			model.waitForEvent(),
-			tea.Tick(2*time.Minute, func(time.Time) tea.Msg { return pollTickMsg{} }),
+			tea.Tick(30*time.Second, func(time.Time) tea.Msg { return pollTickMsg{} }),
 		)
 
 	case pollTickMsg:
@@ -303,7 +303,7 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return model, nil
 
 	case clockTickMsg:
-		return model, tea.Tick(30*time.Second, func(time.Time) tea.Msg { return clockTickMsg{} })
+		return model, tea.Tick(time.Second, func(time.Time) tea.Msg { return clockTickMsg{} })
 
 	case tea.MouseMsg:
 		switch {

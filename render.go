@@ -26,6 +26,8 @@ func formatAge(at time.Time) string {
 	}
 	elapsed := time.Since(at)
 	switch {
+	case elapsed < time.Minute:
+		return fmt.Sprintf("%ds", int(elapsed.Seconds()))
 	case elapsed < time.Hour:
 		return fmt.Sprintf("%dm", int(elapsed.Minutes()))
 	case elapsed < 48*time.Hour:
