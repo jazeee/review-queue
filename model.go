@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type ViewKind string
@@ -357,6 +358,17 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			model.cursor--
 		case message.Button == tea.MouseButtonWheelDown:
 			model.cursor++
+		case message.Button == tea.MouseButtonLeft && message.Action == tea.MouseActionPress && message.Y == 0:
+			tabStart := 0
+			for index := range views {
+				tabWidth := lipgloss.Width(styleTab.Render(model.formatTabLabel(index)))
+				if message.X >= tabStart && message.X < tabStart+tabWidth {
+					model.view = views[index]
+					model.cursor, model.offset = 0, 0
+					model.applyFilter()
+				}
+				tabStart += tabWidth + 1
+			}
 		case message.Button == tea.MouseButtonLeft && message.Action == tea.MouseActionPress:
 			// Rows start below the tab bar and the column header.
 			if row := message.Y - 2; row >= 0 && row < model.tableHeight() {

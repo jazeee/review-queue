@@ -224,10 +224,15 @@ func (model Model) renderDetail() []string {
 	return lines
 }
 
+// formatTabLabel is shared with mouse hit-testing so click targets match what is drawn.
+func (model Model) formatTabLabel(index int) string {
+	return fmt.Sprintf("%d %s %d", index+1, views[index], model.countView(views[index]))
+}
+
 func (model Model) renderHeader() string {
 	var tabs []string
 	for index, view := range views {
-		label := fmt.Sprintf("%d %s %d", index+1, view, model.countView(view))
+		label := model.formatTabLabel(index)
 		if view == model.view {
 			tabs = append(tabs, styleTabFocus.Render(label))
 		} else {
