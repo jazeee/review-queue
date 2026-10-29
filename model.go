@@ -28,6 +28,11 @@ type identityMsg struct {
 }
 
 type pollTickMsg struct{}
+
+type watchedRefreshedMsg struct {
+	PullRequests []PullRequest
+	Err          error
+}
 type clockTickMsg struct{}
 
 type Model struct {
@@ -60,6 +65,8 @@ type Model struct {
 	confirmAll    bool
 	undo          map[int]time.Time
 	rescanQueued  bool
+	// watched holds PRs recently opened in the browser, keyed to when they were opened.
+	watched map[int]time.Time
 }
 
 func NewModel(repository string, window time.Duration) Model {
@@ -76,6 +83,7 @@ func NewModel(repository string, window time.Duration) Model {
 		searchInput:  searchInput,
 		mouseEnabled: true,
 		events:       make(chan tea.Msg, 64),
+		watched:      map[int]time.Time{},
 	}
 	model.rebuildRows()
 	return model
@@ -110,6 +118,24 @@ func (model *Model) startScan() {
 	StartScan(model.repository, from, model.events)
 }
 
+func (model Model) refreshWatched() tea.Cmd {
+	var numbers []int
+	for number, openedAt := range model.watched {
+		if time.Since(openedAt) > 30*time.Minute {
+			delete(model.watched, number)
+		} else {
+			numbers = append(numbers, number)
+		}
+	}
+	if len(numbers) == 0 {
+		return nil
+	}
+	return func() tea.Msg {
+		pullRequests, fetchError := FetchPullRequests(model.repository, numbers)
+		return watchedRefreshedMsg{PullRequests: pullRequests, Err: fetchError}
+	}
+}
+
 func (model Model) isRelevant(pullRequest PullRequest) bool {
 	if pullRequest.Author == model.cache.Identity.Login {
 		return true
@@ -120,6 +146,19 @@ func (model Model) isRelevant(pullRequest PullRequest) bool {
 		}
 	}
 	return false
+}
+
+// mergePullRequests keeps the fresher copy, since a slow scan can land after a direct fetch.
+func (model *Model) mergePullRequests(pullRequests []PullRequest) {
+	for _, pullRequest := range pullRequests {
+		if cached, ok := model.cache.PullRequests[pullRequest.Number]; ok && cached.UpdatedAt.After(pullRequest.UpdatedAt) {
+			continue
+		}
+		if model.isRelevant(pullRequest) {
+			model.cache.PullRequests[pullRequest.Number] = pullRequest
+		}
+	}
+	model.rebuildRows()
 }
 
 func (model *Model) rebuildRows() {
@@ -267,13 +306,8 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return model, nil
 
 	case scanBatchMsg:
-		for _, pullRequest := range message.PullRequests {
-			if model.isRelevant(pullRequest) {
-				model.cache.PullRequests[pullRequest.Number] = pullRequest
-			}
-		}
 		model.scanCompleted, model.scanTotal = message.Completed, message.Total
-		model.rebuildRows()
+		model.mergePullRequests(message.PullRequests)
 		return model, model.waitForEvent()
 
 	case scanDoneMsg:
@@ -300,6 +334,18 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case pollTickMsg:
 		model.startScan()
+		return model, model.refreshWatched()
+
+	case tea.FocusMsg:
+		model.startScan()
+		return model, model.refreshWatched()
+
+	case watchedRefreshedMsg:
+		if message.Err != nil {
+			model.lastError = message.Err.Error()
+			return model, nil
+		}
+		model.mergePullRequests(message.PullRequests)
 		return model, nil
 
 	case clockTickMsg:
@@ -408,6 +454,7 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		model.applyFilter()
 	case "o", "enter":
 		if hasRow {
+			model.watched[row.PullRequest.Number] = time.Now()
 			if openError := OpenUrl(row.PullRequest.Url); openError != nil {
 				model.lastError = openError.Error()
 			}

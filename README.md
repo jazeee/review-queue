@@ -42,7 +42,10 @@ hidden except in Mine.
   `+commits` (reviewed, but the head moved since), or `seen` (dismissed locally).
 - **Title** is struck through once none of your requests are pending, like Slack.
 
-A review you submit in the GitHub UI marks the PR read on the next poll. A
+A review you submit in the GitHub UI marks the PR read on the next poll. PRs
+opened with `o` are re-fetched directly (no search-index lag) on every poll for
+30 minutes, and immediately when the terminal regains focus (in tmux this needs
+`set -g focus-events on`). A
 newer review request makes it unread again, even after a local dismissal.
 
 ## Keys

@@ -18,6 +18,7 @@ func main() {
 		NewModel(*repository, time.Duration(*days)*24*time.Hour),
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
+		tea.WithReportFocus(),
 	)
 	if _, runError := program.Run(); runError != nil {
 		fmt.Fprintln(os.Stderr, "review-queue exited with error:", runError)

@@ -8,21 +8,24 @@ import (
 	"time"
 )
 
+const pullRequestFields = `fragment PullRequestFields on PullRequest {
+  number title url state isDraft reviewDecision createdAt updatedAt mergedAt headRefOid
+  author { login }
+  reviewRequests(first: 30) { nodes { requestedReviewer { __typename ... on User { login } ... on Team { slug } } } }
+  timelineItems(last: 100, itemTypes: [REVIEW_REQUESTED_EVENT, REVIEW_REQUEST_REMOVED_EVENT]) { nodes { __typename
+    ... on ReviewRequestedEvent { createdAt actor { login } requestedReviewer { __typename ... on User { login } ... on Team { slug } } }
+    ... on ReviewRequestRemovedEvent { createdAt actor { login } requestedReviewer { __typename ... on User { login } ... on Team { slug } } } } }
+  reviews(last: 100) { nodes { author { login } state submittedAt commit { oid } } }
+}`
+
 const searchQuery = `query($q: String!, $after: String) {
   search(type: ISSUE, query: $q, first: 50, after: $after) {
     issueCount
     pageInfo { hasNextPage endCursor }
-    nodes { ... on PullRequest {
-      number title url state isDraft reviewDecision createdAt updatedAt mergedAt headRefOid
-      author { login }
-      reviewRequests(first: 30) { nodes { requestedReviewer { __typename ... on User { login } ... on Team { slug } } } }
-      timelineItems(last: 100, itemTypes: [REVIEW_REQUESTED_EVENT, REVIEW_REQUEST_REMOVED_EVENT]) { nodes { __typename
-        ... on ReviewRequestedEvent { createdAt actor { login } requestedReviewer { __typename ... on User { login } ... on Team { slug } } }
-        ... on ReviewRequestRemovedEvent { createdAt actor { login } requestedReviewer { __typename ... on User { login } ... on Team { slug } } } } }
-      reviews(last: 100) { nodes { author { login } state submittedAt commit { oid } } }
-    } }
+    nodes { ...PullRequestFields }
   }
-}`
+}
+` + pullRequestFields
 
 type actorPayload struct {
 	Login string `json:"login"`
@@ -217,6 +220,32 @@ func SearchPullRequests(query string) ([]PullRequest, int, error) {
 		}
 		after = response.Data.Search.PageInfo.EndCursor
 	}
+}
+
+// FetchPullRequests reads pull requests by number, bypassing search-index lag.
+func FetchPullRequests(repository string, numbers []int) ([]PullRequest, error) {
+	owner, name, _ := strings.Cut(repository, "/")
+	var fields strings.Builder
+	for _, number := range numbers {
+		fmt.Fprintf(&fields, "pr%d: pullRequest(number: %d) { ...PullRequestFields }\n", number, number)
+	}
+	query := fmt.Sprintf("query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) {\n%s} }\n%s", fields.String(), pullRequestFields)
+	result := RunCommand(60*time.Second, "", "gh", "api", "graphql", "-f", "query="+query, "-f", "owner="+owner, "-f", "name="+name)
+	var response struct {
+		Data struct {
+			Repository map[string]*pullRequestPayload `json:"repository"`
+		} `json:"data"`
+	}
+	if json.Unmarshal([]byte(result.Stdout), &response) != nil || !result.Succeeded() {
+		return nil, fmt.Errorf("gh graphql: %s", strings.TrimSpace(result.Stderr))
+	}
+	var pullRequests []PullRequest
+	for _, payload := range response.Data.Repository {
+		if payload != nil {
+			pullRequests = append(pullRequests, convertPullRequest(*payload))
+		}
+	}
+	return pullRequests, nil
 }
 
 func FetchIdentity(organization string) (Identity, error) {
