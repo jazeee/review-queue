@@ -90,3 +90,19 @@ func TestRemovedRequestIsNotCreditedToALaterReviewer(t *testing.T) {
 		t.Fatalf("expected removed by alice, got %+v", row.Targets[0])
 	}
 }
+
+func TestDraftsReachInboxOnlyInDraftsMode(t *testing.T) {
+	pullRequest := PullRequest{
+		Author: "alice", State: PullRequestDraft, BaseRef: "main",
+		RequestEvents: []RequestEvent{{Reviewer: security, Action: RequestAdded, At: at(0)}},
+	}
+	row, _ := BuildQueueRow(pullRequest, viewer, time.Time{})
+	if belongsToView(row, ViewInbox, false) || !belongsToView(row, ViewInbox, true) {
+		t.Fatalf("expected an unread draft only in drafts mode")
+	}
+
+	mine, _ := BuildQueueRow(PullRequest{Author: "jazeee", State: PullRequestDraft, BaseRef: "main"}, viewer, time.Time{})
+	if !belongsToView(mine, ViewMine, false) {
+		t.Fatalf("expected my draft to stay in Mine outside drafts mode")
+	}
+}
