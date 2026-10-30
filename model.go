@@ -229,9 +229,6 @@ func belongsToView(row QueueRow, view ViewKind, draftsOnly bool) bool {
 	if !draftsOnly && isDraft && !isMine {
 		return false
 	}
-	if !isMine && view != ViewInbox && row.PullRequest.BaseRef != "main" {
-		return false
-	}
 	switch view {
 	case ViewInbox:
 		return row.Unread
