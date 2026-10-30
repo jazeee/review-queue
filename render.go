@@ -164,6 +164,9 @@ func (model Model) renderRow(row QueueRow, selected bool) string {
 		{renderMyStatus(row)},
 		{{pullRequest.Title, titleStyle}},
 	}
+	if pullRequest.BaseRef != "main" {
+		cells[len(cells)-1] = []segment{{"⤷ " + pullRequest.BaseRef, styleWarning}, {" ", lipgloss.NewStyle()}, {pullRequest.Title, titleStyle}}
+	}
 	rendered := make([]string, len(cells))
 	for index, entry := range model.columns() {
 		rendered[index] = renderCell(cells[index], entry.width, selected)
@@ -183,6 +186,9 @@ func (model Model) renderDetail() []string {
 			stateStyle(pullRequest.State).Render(string(pullRequest.State)),
 			styleGood.Render(fmt.Sprintf("+%d", pullRequest.Additions)), styleBad.Render(fmt.Sprintf("-%d", pullRequest.Deletions)),
 			formatAge(pullRequest.CreatedAt), pullRequest.Url),
+	}
+	if pullRequest.BaseRef != "main" {
+		lines = append(lines, styleWarning.Render(" stacked on "+pullRequest.BaseRef+" "))
 	}
 	for _, target := range row.Targets {
 		name := "@" + target.Reviewer.Name

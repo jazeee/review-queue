@@ -31,6 +31,7 @@ var (
 	styleTab      = lipgloss.NewStyle().Padding(0, 1).Foreground(colorGrey)
 	styleTabFocus = lipgloss.NewStyle().Padding(0, 1).Bold(true).Foreground(lipgloss.Color("0")).Background(colorAccent)
 	styleError    = lipgloss.NewStyle().Foreground(colorRed)
+	styleWarning  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("0")).Background(colorYellow)
 	styleDetail   = lipgloss.NewStyle().
 			Border(lipgloss.NormalBorder(), true, false, false, false).
 			BorderForeground(colorAccent)

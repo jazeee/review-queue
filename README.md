@@ -49,6 +49,8 @@ stacked PRs (base is not `main`) are hidden except in Mine.
   Yellow = still pending; ~~struck~~ = fulfilled by someone's review or removed.
 - **Me** `new`, `re-req` (asked again after your review), `reviewed`,
   `+commits` (reviewed, but the head moved since), or `seen` (dismissed locally).
+- **Title** is prefixed with the base branch, highlighted yellow, when it is not
+  `main` (stacked PRs, visible in Mine).
 - **Title** is struck through once none of your requests are pending, like Slack.
 
 A review you submit in the GitHub UI marks the PR read on the next poll. PRs
