@@ -9,7 +9,7 @@ import (
 )
 
 const pullRequestFields = `fragment PullRequestFields on PullRequest {
-  number title url state isDraft reviewDecision createdAt updatedAt mergedAt baseRefName headRefName headRefOid isCrossRepository additions deletions
+  number title url state isDraft reviewDecision createdAt updatedAt mergedAt baseRefName headRefName headRefOid isCrossRepository additions deletions mergeable
   author { login }
   labels(first: 20) { nodes { name } }
   reviewRequests(first: 30) { nodes { requestedReviewer { __typename ... on User { login } ... on Team { slug } } } }
@@ -51,6 +51,7 @@ type pullRequestPayload struct {
 	BaseRefName    string        `json:"baseRefName"`
 	HeadRefName    string        `json:"headRefName"`
 	IsCrossRepo    bool          `json:"isCrossRepository"`
+	Mergeable      string        `json:"mergeable"`
 	Additions      int           `json:"additions"`
 	Deletions      int           `json:"deletions"`
 	HeadRefOid     string        `json:"headRefOid"`
@@ -134,6 +135,7 @@ func convertPullRequest(payload pullRequestPayload) PullRequest {
 		BaseRef:           payload.BaseRefName,
 		HeadRef:           payload.HeadRefName,
 		IsCrossRepository: payload.IsCrossRepo,
+		Mergeable:         payload.Mergeable,
 		Additions:         payload.Additions,
 		Deletions:         payload.Deletions,
 	}

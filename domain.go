@@ -61,6 +61,7 @@ type PullRequest struct {
 	BaseRef           string           `json:"baseRef"`
 	HeadRef           string           `json:"headRef"`
 	IsCrossRepository bool             `json:"isCrossRepository"`
+	Mergeable         string           `json:"mergeable"`
 	Additions         int              `json:"additions"`
 	Deletions         int              `json:"deletions"`
 	Labels            []string         `json:"labels"`

@@ -171,8 +171,13 @@ func (model Model) isRelevant(pullRequest PullRequest) bool {
 // mergePullRequests keeps the fresher copy, since a slow scan can land after a direct fetch.
 func (model *Model) mergePullRequests(pullRequests []PullRequest) {
 	for _, pullRequest := range pullRequests {
-		if cached, ok := model.cache.PullRequests[pullRequest.Number]; ok && cached.UpdatedAt.After(pullRequest.UpdatedAt) {
+		cached, isCached := model.cache.PullRequests[pullRequest.Number]
+		if isCached && cached.UpdatedAt.After(pullRequest.UpdatedAt) {
 			continue
+		}
+		// GitHub reports UNKNOWN while it recomputes mergeability; keep the last answer for the same head.
+		if isCached && pullRequest.Mergeable == "UNKNOWN" && cached.HeadOid == pullRequest.HeadOid {
+			pullRequest.Mergeable = cached.Mergeable
 		}
 		if model.isRelevant(pullRequest) {
 			model.cache.PullRequests[pullRequest.Number] = pullRequest

@@ -118,13 +118,20 @@ func renderMyStatus(row QueueRow) segment {
 	}
 }
 
+func renderNotes(pullRequest PullRequest) []segment {
+	if pullRequest.isOpen() && pullRequest.Mergeable == "CONFLICTING" {
+		return []segment{{"conflicts", styleAlert}}
+	}
+	return nil
+}
+
 type column struct {
 	title string
 	width int
 }
 
 func (model Model) columns() []column {
-	columns := []column{{"", 1}, {"PR", 6}, {"Age", 4}, {"Author", 16}, {"State", 8}, {"Lines", 6}, {"+", 5}, {"-", 5}, {"For", 26}, {"Me", 8}}
+	columns := []column{{"", 1}, {"PR", 6}, {"Age", 4}, {"Author", 16}, {"State", 8}, {"Lines", 6}, {"+", 5}, {"-", 5}, {"For", 26}, {"Me", 8}, {"Notes", 9}}
 	used := 0
 	for _, entry := range columns {
 		used += entry.width + 1
@@ -162,6 +169,7 @@ func (model Model) renderRow(row QueueRow, selected bool) string {
 		{{fmt.Sprintf("%5d", pullRequest.Deletions), styleBad}},
 		renderTargets(row),
 		{renderMyStatus(row)},
+		renderNotes(pullRequest),
 		{{pullRequest.Title, titleStyle}},
 	}
 	if pullRequest.BaseRef != "main" {
@@ -189,6 +197,9 @@ func (model Model) renderDetail() []string {
 	}
 	if pullRequest.BaseRef != "main" {
 		lines = append(lines, styleWarning.Render(" stacked on "+pullRequest.BaseRef+" "))
+	}
+	if pullRequest.isOpen() && pullRequest.Mergeable == "CONFLICTING" {
+		lines = append(lines, styleAlert.Render(" merge conflicts with "+pullRequest.BaseRef+" "))
 	}
 	for _, target := range row.Targets {
 		name := "@" + target.Reviewer.Name
