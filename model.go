@@ -229,7 +229,7 @@ func belongsToView(row QueueRow, view ViewKind, draftsOnly bool) bool {
 	if !draftsOnly && isDraft && !isMine {
 		return false
 	}
-	if !isMine && row.PullRequest.BaseRef != "main" {
+	if !isMine && view != ViewInbox && row.PullRequest.BaseRef != "main" {
 		return false
 	}
 	switch view {
@@ -422,9 +422,11 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.MouseMsg:
 		switch {
 		case message.Button == tea.MouseButtonWheelUp:
-			model.cursor--
+			model.cursor -= model.tableHeight()
+			model.offset -= model.tableHeight()
 		case message.Button == tea.MouseButtonWheelDown:
-			model.cursor++
+			model.cursor += model.tableHeight()
+			model.offset += model.tableHeight()
 		case message.Button == tea.MouseButtonLeft && message.Action == tea.MouseActionPress && message.Y == 0:
 			tabStart := 0
 			for index := range views {

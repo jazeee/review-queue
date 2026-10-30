@@ -28,8 +28,9 @@ incrementally 30 seconds after each scan finishes. State lives in
 
 ## Views
 
-Closed PRs, and PRs merged more than 5 days ago, are hidden everywhere. Drafts and
-stacked PRs (base is not `main`) are hidden except in Mine.
+Closed PRs, and PRs merged more than 5 days ago, are hidden everywhere. Drafts are
+hidden except in Mine. Stacked PRs (base is not `main`) are hidden except in
+Inbox and Mine.
 
 
 | View    | Shows                                                                  |
@@ -51,7 +52,7 @@ stacked PRs (base is not `main`) are hidden except in Mine.
   `+commits` (reviewed, but the head moved since), or `seen` (dismissed locally).
 - **Notes** flags open PRs with merge conflicts (red).
 - **Title** is prefixed with the base branch, highlighted yellow, when it is not
-  `main` (stacked PRs, visible in Mine).
+  `main` (stacked PRs, visible in Inbox and Mine).
 - **Title** is struck through once none of your requests are pending, like Slack.
 
 A review you submit in the GitHub UI marks the PR read on the next poll. PRs
@@ -75,6 +76,6 @@ newer review request makes it unread again, even after a local dismissal.
 | `/` | filter the current tab (regex, case-insensitive; literal fallback; tab shows /); `esc` clears |
 | `y` | copy the PR URL |
 | `r` / `R` | refresh now / rescan the whole window (queued if a scan is running) |
-| click | select a row (double-click opens it), or switch to a tab; the wheel moves the cursor |
+| click | select a row (double-click opens it), or switch to a tab; the wheel moves a page |
 | `m` | toggle mouse capture |
 | `q` | quit |
