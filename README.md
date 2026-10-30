@@ -71,8 +71,8 @@ newer review request makes it unread again, even after a local dismissal.
 | `space` | toggle seen (local dismissal) |
 | `A` `A` | mark every visible row seen |
 | `u` | undo the last seen/all-seen |
-| `d` | toggle between drafts only and the normal views |
-| `/` | filter (regex, case-insensitive; literal fallback); `esc` clears |
+| `d` | toggle drafts only for the current tab (tab shows ✎) |
+| `/` | filter the current tab (regex, case-insensitive; literal fallback; tab shows /); `esc` clears |
 | `y` | copy the PR URL |
 | `r` / `R` | refresh now / rescan the whole window (queued if a scan is running) |
 | click | select a row (double-click opens it), or switch to a tab; the wheel moves the cursor |

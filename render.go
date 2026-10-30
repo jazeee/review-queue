@@ -243,7 +243,14 @@ func (model Model) renderDetail() []string {
 
 // formatTabLabel is shared with mouse hit-testing so click targets match what is drawn.
 func (model Model) formatTabLabel(index int) string {
-	return fmt.Sprintf("%d %s %d", index+1, views[index], model.countView(views[index]))
+	label := fmt.Sprintf("%d %s %d", index+1, views[index], model.countView(views[index]))
+	if model.filters[views[index]].draftsOnly {
+		label += " ✎"
+	}
+	if model.filters[views[index]].query != "" {
+		label += " /"
+	}
+	return label
 }
 
 func (model Model) renderHeader() string {
@@ -257,7 +264,7 @@ func (model Model) renderHeader() string {
 		}
 	}
 	left := strings.Join(tabs, " ")
-	if model.draftsOnly {
+	if model.filters[model.view].draftsOnly {
 		left += "  " + stylePending.Render("drafts only")
 	}
 	var status string
@@ -315,7 +322,7 @@ func (model Model) View() string {
 		footer = model.searchInput.View()
 	case model.flash != "":
 		footer = stylePending.Render(model.flash)
-	case model.searchPattern != nil:
+	case model.searchInput.Value() != "":
 		footer = styleDim.Render("filter: ") + model.searchInput.Value() + styleDim.Render("  (esc clears)")
 	}
 	lines = append(lines, footer)

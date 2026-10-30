@@ -23,6 +23,11 @@ const (
 
 var views = []ViewKind{ViewInbox, ViewWaiting, ViewAll, ViewMine}
 
+type viewFilter struct {
+	draftsOnly bool
+	query      string
+}
+
 type identityMsg struct {
 	Identity Identity
 	Err      error
@@ -55,9 +60,8 @@ type Model struct {
 	cursor  int
 	offset  int
 
-	searching     bool
-	searchInput   textinput.Model
-	searchPattern *regexp.Regexp
+	searching   bool
+	searchInput textinput.Model
 
 	width, height int
 	mouseEnabled  bool
@@ -72,7 +76,7 @@ type Model struct {
 	confirmAll    bool
 	undo          map[int]time.Time
 	rescanQueued  bool
-	draftsOnly    bool
+	filters       map[ViewKind]viewFilter
 
 	lastClickNumber int
 	lastClickAt     time.Time
@@ -96,6 +100,7 @@ func NewModel(repository string, checkout string, window time.Duration) Model {
 		mouseEnabled: true,
 		events:       make(chan tea.Msg, 64),
 		watched:      map[int]time.Time{},
+		filters:      map[ViewKind]viewFilter{},
 	}
 	model.rebuildRows()
 	return model
@@ -242,7 +247,7 @@ func belongsToView(row QueueRow, view ViewKind, draftsOnly bool) bool {
 func (model Model) countView(view ViewKind) int {
 	count := 0
 	for _, row := range model.allRows {
-		if belongsToView(row, view, model.draftsOnly) {
+		if belongsToView(row, view, model.filters[view].draftsOnly) {
 			count++
 		}
 	}
@@ -255,11 +260,19 @@ func (model *Model) applyFilter() {
 		selectedNumber = model.rows[model.cursor].PullRequest.Number
 	}
 	model.rows = nil
+	filter := model.filters[model.view]
+	var pattern *regexp.Regexp
+	if filter.query != "" {
+		var compileError error
+		if pattern, compileError = regexp.Compile("(?i)" + filter.query); compileError != nil {
+			pattern = regexp.MustCompile("(?i)" + regexp.QuoteMeta(filter.query))
+		}
+	}
 	for _, row := range model.allRows {
-		if !belongsToView(row, model.view, model.draftsOnly) {
+		if !belongsToView(row, model.view, filter.draftsOnly) {
 			continue
 		}
-		if model.searchPattern != nil && !model.searchPattern.MatchString(searchableText(row)) {
+		if pattern != nil && !pattern.MatchString(searchableText(row)) {
 			continue
 		}
 		model.rows = append(model.rows, row)
@@ -272,6 +285,21 @@ func (model *Model) applyFilter() {
 		}
 	}
 	model.clampCursor()
+}
+
+func (model *Model) switchView(view ViewKind) {
+	model.view = view
+	model.cursor, model.offset = 0, 0
+	model.searchInput.SetValue(model.filters[view].query)
+	model.applyFilter()
+}
+
+func (model *Model) setQuery(query string) {
+	filter := model.filters[model.view]
+	filter.query = query
+	model.filters[model.view] = filter
+	model.searchInput.SetValue(query)
+	model.applyFilter()
 }
 
 func searchableText(row QueueRow) string {
@@ -402,9 +430,7 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			for index := range views {
 				tabWidth := lipgloss.Width(styleTab.Render(model.formatTabLabel(index)))
 				if message.X >= tabStart && message.X < tabStart+tabWidth {
-					model.view = views[index]
-					model.cursor, model.offset = 0, 0
-					model.applyFilter()
+					model.switchView(views[index])
 				}
 				tabStart += tabWidth + 1
 			}
@@ -437,10 +463,8 @@ func (model Model) updateSearch(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch message.String() {
 	case "esc":
 		model.searching = false
-		model.searchInput.SetValue("")
-		model.searchPattern = nil
 		model.searchInput.Blur()
-		model.applyFilter()
+		model.setQuery("")
 		return model, nil
 	case "enter":
 		model.searching = false
@@ -449,16 +473,7 @@ func (model Model) updateSearch(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	var command tea.Cmd
 	model.searchInput, command = model.searchInput.Update(message)
-	query := model.searchInput.Value()
-	model.searchPattern = nil
-	if query != "" {
-		pattern, compileError := regexp.Compile("(?i)" + query)
-		if compileError != nil {
-			pattern = regexp.MustCompile("(?i)" + regexp.QuoteMeta(query))
-		}
-		model.searchPattern = pattern
-	}
-	model.applyFilter()
+	model.setQuery(model.searchInput.Value())
 	return model, command
 }
 
@@ -499,17 +514,13 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		default:
 			index = int(key[0] - '1')
 		}
-		model.view = views[index]
-		model.cursor, model.offset = 0, 0
-		model.applyFilter()
+		model.switchView(views[index])
 	case "/":
 		model.searching = true
 		model.searchInput.Focus()
 		return model, textinput.Blink
 	case "esc":
-		model.searchInput.SetValue("")
-		model.searchPattern = nil
-		model.applyFilter()
+		model.setQuery("")
 	case "o", "enter":
 		if hasRow {
 			model.openPullRequest(row.PullRequest)
@@ -562,7 +573,9 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		model.rebuildRows()
 	case "d":
-		model.draftsOnly = !model.draftsOnly
+		filter := model.filters[model.view]
+		filter.draftsOnly = !filter.draftsOnly
+		model.filters[model.view] = filter
 		model.cursor, model.offset = 0, 0
 		model.applyFilter()
 	case "r":
