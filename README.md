@@ -52,7 +52,7 @@ hidden except in Mine.
 - **Notes** flags open PRs with merge conflicts (red). Otherwise it shows the
   [rote-review](../rote-review) bucket for the PR's current head, as a colored badge: `rote`
   (green, auto-approvable), `light` (yellow), `normal` (orange), or `deep` (red). The detail pane
-  adds rote-review's summary, word-wrapped to the terminal width. Verdicts for an older head are not shown.
+  shows rote-review's summary in its right-hand column, word-wrapped. Verdicts for an older head are not shown.
   `rote·held` (orange `·held`) means rote, but approval waits on the author replying to reviewer
   feedback; the detail pane lists the unanswered comments for any bucket.
   `~/.local/state/rote-review/<owner>-<repo>/verdicts.json` is re-read on each
