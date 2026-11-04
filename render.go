@@ -9,7 +9,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-const detailHeight = 9
+const detailHeight = 11
 
 type segment struct {
 	text  string
@@ -194,12 +194,7 @@ func (model Model) renderDetail() []string {
 	if pullRequest.isOpen() && pullRequest.Mergeable == "CONFLICTING" {
 		lines = append(lines, styleAlert.Render(" merge conflicts with "+pullRequest.BaseRef+" "))
 	}
-	if verdict, found := model.verdicts.Lookup(pullRequest); found {
-		lines = append(lines, attentionStyle(verdict.Attention).Render(verdict.Attention)+" "+styleDim.Render("rote-review: ")+verdict.Summary)
-		if len(verdict.Held) > 0 {
-			lines = append(lines, styleHeld.Render(fmt.Sprintf("held: %d unanswered", len(verdict.Held)))+" "+styleDim.Render(verdict.Held[0]))
-		}
-	}
+	lines = append(lines, renderVerdictDetail(pullRequest, model.verdicts, model.width)...)
 	for _, target := range row.Targets {
 		name := "@" + target.Reviewer.Name
 		if target.Reviewer.Kind == ReviewerTeam {

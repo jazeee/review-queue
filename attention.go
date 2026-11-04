@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // Verdict is the part of a rote-review verdict that review-queue shows.
@@ -94,4 +95,22 @@ func renderNotes(pullRequest PullRequest, verdicts Verdicts) []segment {
 		return []segment{{verdict.Attention, attentionStyle(verdict.Attention)}}
 	}
 	return nil
+}
+
+// renderVerdictDetail word-wraps rote-review's summary and hold to width, for the detail
+// pane. Only the leading badge is styled, so wrapping never splits a style.
+func renderVerdictDetail(pullRequest PullRequest, verdicts Verdicts, width int) []string {
+	verdict, found := verdicts.Lookup(pullRequest)
+	if !found {
+		return nil
+	}
+	text := attentionStyle(verdict.Attention).Render(verdict.Attention) + " rote-review: " + verdict.Summary
+	if len(verdict.Held) > 0 {
+		var held []string
+		for _, item := range verdict.Held {
+			held = append(held, strings.TrimPrefix(item, "unanswered "))
+		}
+		text += "\n" + styleHeld.Render(fmt.Sprintf("held: %d unanswered", len(verdict.Held))) + " " + strings.Join(held, " · ")
+	}
+	return strings.Split(ansi.Wrap(text, width, ""), "\n")
 }
