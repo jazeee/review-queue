@@ -118,13 +118,6 @@ func renderMyStatus(row QueueRow) segment {
 	}
 }
 
-func renderNotes(pullRequest PullRequest) []segment {
-	if pullRequest.isOpen() && pullRequest.Mergeable == "CONFLICTING" {
-		return []segment{{"conflicts", styleAlert}}
-	}
-	return nil
-}
-
 type column struct {
 	title string
 	width int
@@ -169,7 +162,7 @@ func (model Model) renderRow(row QueueRow, selected bool) string {
 		{{fmt.Sprintf("%5d", pullRequest.Deletions), styleBad}},
 		renderTargets(row),
 		{renderMyStatus(row)},
-		renderNotes(pullRequest),
+		renderNotes(pullRequest, model.verdicts),
 		{{pullRequest.Title, titleStyle}},
 	}
 	if pullRequest.BaseRef != "main" {
@@ -200,6 +193,12 @@ func (model Model) renderDetail() []string {
 	}
 	if pullRequest.isOpen() && pullRequest.Mergeable == "CONFLICTING" {
 		lines = append(lines, styleAlert.Render(" merge conflicts with "+pullRequest.BaseRef+" "))
+	}
+	if verdict, found := model.verdicts.Lookup(pullRequest); found {
+		lines = append(lines, attentionStyle(verdict.Attention).Render(verdict.Attention)+" "+styleDim.Render("rote-review: ")+verdict.Summary)
+		if len(verdict.Held) > 0 {
+			lines = append(lines, styleHeld.Render(fmt.Sprintf("held: %d unanswered", len(verdict.Held)))+" "+styleDim.Render(verdict.Held[0]))
+		}
 	}
 	for _, target := range row.Targets {
 		name := "@" + target.Reviewer.Name

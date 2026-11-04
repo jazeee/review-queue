@@ -53,6 +53,7 @@ type Model struct {
 	store      Store
 	cache      Cache
 	dismissals map[int]time.Time
+	verdicts   Verdicts
 
 	allRows []QueueRow
 	rows    []QueueRow
@@ -95,6 +96,7 @@ func NewModel(repository string, checkout string, window time.Duration) Model {
 		store:        store,
 		cache:        store.LoadCache(),
 		dismissals:   store.LoadDismissals(),
+		verdicts:     NewVerdicts(repository),
 		view:         ViewInbox,
 		searchInput:  searchInput,
 		mouseEnabled: true,
@@ -102,6 +104,7 @@ func NewModel(repository string, checkout string, window time.Duration) Model {
 		watched:      map[int]time.Time{},
 		filters:      map[ViewKind]viewFilter{},
 	}
+	model.verdicts.Reload()
 	model.rebuildRows()
 	return model
 }
@@ -390,10 +393,12 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		)
 
 	case pollTickMsg:
+		model.verdicts.Reload()
 		model.startScan()
 		return model, model.refreshWatched()
 
 	case tea.FocusMsg:
+		model.verdicts.Reload()
 		model.startScan()
 		return model, model.refreshWatched()
 
