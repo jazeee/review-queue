@@ -67,17 +67,20 @@ func (verdicts Verdicts) Lookup(pullRequest PullRequest) (Verdict, bool) {
 }
 
 func attentionStyle(attention string) lipgloss.Style {
+	badge := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("0"))
 	switch attention {
 	case "rote":
-		return lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("0")).Background(colorGreen)
+		return badge.Background(lipgloss.Color("#00af00"))
 	case "light":
-		return lipgloss.NewStyle().Foreground(colorYellow)
+		return badge.Background(lipgloss.Color("#afd700"))
 	case "normal":
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
+		return badge.Background(lipgloss.Color("#ffd700"))
 	default:
-		return lipgloss.NewStyle().Bold(true).Foreground(colorRed)
+		return badge.Foreground(lipgloss.Color("15")).Background(lipgloss.Color("#d70000"))
 	}
 }
+
+var styleHeld = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("0")).Background(lipgloss.Color("#ff8700"))
 
 func renderNotes(pullRequest PullRequest, verdicts Verdicts) []segment {
 	if pullRequest.isOpen() && pullRequest.Mergeable == "CONFLICTING" {
@@ -86,7 +89,7 @@ func renderNotes(pullRequest PullRequest, verdicts Verdicts) []segment {
 	if verdict, found := verdicts.Lookup(pullRequest); found && pullRequest.isOpen() {
 		// Only a rote PR is held back from auto-approval; the detail pane shows any hold.
 		if len(verdict.Held) > 0 && verdict.Attention == "rote" {
-			return []segment{{verdict.Attention, attentionStyle(verdict.Attention)}, {"·held", stylePending}}
+			return []segment{{verdict.Attention, attentionStyle(verdict.Attention)}, {"·held", styleHeld}}
 		}
 		return []segment{{verdict.Attention, attentionStyle(verdict.Attention)}}
 	}
