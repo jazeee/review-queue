@@ -9,8 +9,6 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-const detailHeight = 11
-
 type segment struct {
 	text  string
 	style lipgloss.Style
@@ -175,66 +173,6 @@ func (model Model) renderRow(row QueueRow, selected bool) string {
 	return strings.Join(rendered, renderCell(nil, 1, selected))
 }
 
-func (model Model) renderDetail() []string {
-	row, hasRow := model.selectedRow()
-	if !hasRow {
-		return []string{styleDim.Render("Nothing here.")}
-	}
-	pullRequest := row.PullRequest
-	lines := []string{
-		styleBold.Render(fmt.Sprintf("#%d %s", pullRequest.Number, pullRequest.Title)),
-		fmt.Sprintf("%s · %s · %s %s · opened %s ago · %s", pullRequest.Author,
-			stateStyle(pullRequest.State).Render(string(pullRequest.State)),
-			styleGood.Render(fmt.Sprintf("+%d", pullRequest.Additions)), styleBad.Render(fmt.Sprintf("-%d", pullRequest.Deletions)),
-			formatAge(pullRequest.CreatedAt), pullRequest.Url),
-	}
-	if pullRequest.BaseRef != "main" {
-		lines = append(lines, styleWarning.Render(" stacked on "+pullRequest.BaseRef+" "))
-	}
-	if pullRequest.isOpen() && pullRequest.Mergeable == "CONFLICTING" {
-		lines = append(lines, styleAlert.Render(" merge conflicts with "+pullRequest.BaseRef+" "))
-	}
-	lines = append(lines, renderVerdictDetail(pullRequest, model.verdicts, model.width)...)
-	for _, target := range row.Targets {
-		name := "@" + target.Reviewer.Name
-		if target.Reviewer.Kind == ReviewerTeam {
-			name = "team " + target.Reviewer.Name
-		}
-		status := stylePending.Render("pending")
-		switch target.Status {
-		case TargetFulfilled:
-			status = styleGood.Render("reviewed by " + target.ResolvedBy)
-		case TargetRemoved:
-			status = styleDim.Render("removed")
-			if target.ResolvedBy != "" {
-				status = styleDim.Render("removed by " + target.ResolvedBy)
-			}
-		}
-		lines = append(lines, fmt.Sprintf("  %-28s %s  %s", name, status,
-			styleDim.Render(fmt.Sprintf("requested %s ago by %s", formatAge(target.RequestedAt), target.RequestedBy))))
-	}
-	var reviews []string
-	for index := len(pullRequest.Reviews) - 1; index >= 0 && len(reviews) < 6; index-- {
-		review := pullRequest.Reviews[index]
-		if isAutomatedReviewer(review.Author) {
-			continue
-		}
-		style := styleDim
-		switch review.State {
-		case "APPROVED":
-			style = styleGood
-		case "CHANGES_REQUESTED":
-			style = styleBad
-		}
-		reviews = append(reviews, fmt.Sprintf("%s %s %s", review.Author,
-			style.Render(strings.ToLower(strings.ReplaceAll(review.State, "_", " "))), styleDim.Render(formatAge(review.SubmittedAt))))
-	}
-	if len(reviews) > 0 {
-		lines = append(lines, "Reviews: "+strings.Join(reviews, " · "))
-	}
-	return lines
-}
-
 // formatTabLabel is shared with mouse hit-testing so click targets match what is drawn.
 func (model Model) formatTabLabel(index int) string {
 	label := fmt.Sprintf("%d %s %d", index+1, views[index], model.countView(views[index]))
@@ -301,14 +239,7 @@ func (model Model) View() string {
 		}
 	}
 
-	detail := model.renderDetail()
-	for len(detail) < detailHeight-1 {
-		detail = append(detail, "")
-	}
-	for index := range detail {
-		detail[index] = ansi.Truncate(detail[index], model.width, "…")
-	}
-	lines = append(lines, styleDetail.Width(model.width).Render(strings.Join(detail[:detailHeight-1], "\n")))
+	lines = append(lines, model.renderDetailPane())
 
 	footer := styleDim.Render("o open · p pi · space seen · A all seen · u undo · / search · tab view · d drafts · r refresh · y copy · m mouse · q quit")
 	switch {
