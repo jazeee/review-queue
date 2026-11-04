@@ -72,9 +72,9 @@ func attentionStyle(attention string) lipgloss.Style {
 	case "rote":
 		return badge.Background(lipgloss.Color("#00af00"))
 	case "light":
-		return badge.Background(lipgloss.Color("#afd700"))
-	case "normal":
 		return badge.Background(lipgloss.Color("#ffd700"))
+	case "normal":
+		return badge.Background(lipgloss.Color("#ff8700"))
 	default:
 		return badge.Foreground(lipgloss.Color("15")).Background(lipgloss.Color("#d70000"))
 	}

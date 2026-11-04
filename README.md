@@ -51,7 +51,7 @@ hidden except in Mine.
   `+commits` (reviewed, but the head moved since), or `seen` (dismissed locally).
 - **Notes** flags open PRs with merge conflicts (red). Otherwise it shows the
   [rote-review](../rote-review) bucket for the PR's current head, as a colored badge: `rote`
-  (green, auto-approvable), `light` (yellow-green), `normal` (yellow), or `deep` (red). The detail pane
+  (green, auto-approvable), `light` (yellow), `normal` (orange), or `deep` (red). The detail pane
   adds rote-review's one-line summary. Verdicts for an older head are not shown.
   `rote·held` (orange `·held`) means rote, but approval waits on the author replying to reviewer
   feedback; the detail pane shows the hold for any bucket.
