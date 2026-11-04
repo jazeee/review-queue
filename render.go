@@ -196,6 +196,9 @@ func (model Model) renderDetail() []string {
 	}
 	if verdict, found := model.verdicts.Lookup(pullRequest); found {
 		lines = append(lines, attentionStyle(verdict.Attention).Render(verdict.Attention)+" "+styleDim.Render("rote-review: ")+verdict.Summary)
+		if len(verdict.Held) > 0 {
+			lines = append(lines, stylePending.Render(fmt.Sprintf("held: %d unanswered, ", len(verdict.Held)))+styleDim.Render(verdict.Held[0]))
+		}
 	}
 	for _, target := range row.Targets {
 		name := "@" + target.Reviewer.Name

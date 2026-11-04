@@ -33,3 +33,23 @@ func TestVerdictsOnlyAnswerForTheCurrentHead(t *testing.T) {
 		t.Fatal("skipped or failed screens carry no attention and must not show")
 	}
 }
+
+func TestNotesFlagARotePullRequestHeldByFeedback(t *testing.T) {
+	verdicts := Verdicts{byHead: map[string]Verdict{
+		"7:head": {Attention: "rote", Held: []string{"unanswered comment from bob"}},
+		"8:head": {Attention: "normal", Held: []string{"unanswered comment from bob"}},
+	}}
+	render := func(number int) string {
+		text := ""
+		for _, part := range renderNotes(PullRequest{Number: number, HeadOid: "head", State: PullRequestOpen}, verdicts) {
+			text += part.text
+		}
+		return text
+	}
+	if got := render(7); got != "rote·held" {
+		t.Fatalf("held rote PR: got %q", got)
+	}
+	if got := render(8); got != "normal" {
+		t.Fatalf("held normal PR: got %q", got)
+	}
+}

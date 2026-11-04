@@ -53,6 +53,8 @@ hidden except in Mine.
   [rote-review](../rote-review) bucket for the PR's current head: `rote`
   (green, auto-approvable), `light`, `normal`, or `deep` (red). The detail pane
   adds rote-review's one-line summary. Verdicts for an older head are not shown.
+  `rote·held` means rote, but approval waits on the author replying to reviewer
+  feedback; the detail pane shows the hold for any bucket.
   `~/.local/state/rote-review/<owner>-<repo>/verdicts.json` is re-read on each
   poll and on focus, when it has changed.
 - **Title** is prefixed with the base branch, highlighted yellow, when it is not

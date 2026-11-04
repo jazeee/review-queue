@@ -17,6 +17,7 @@ type Verdict struct {
 	HeadOid     string    `json:"headOid"`
 	Attention   string    `json:"attention"`
 	Summary     string    `json:"summary"`
+	Held        []string  `json:"held"`
 	EvaluatedAt time.Time `json:"evaluatedAt"`
 }
 
@@ -83,6 +84,10 @@ func renderNotes(pullRequest PullRequest, verdicts Verdicts) []segment {
 		return []segment{{"conflicts", styleAlert}}
 	}
 	if verdict, found := verdicts.Lookup(pullRequest); found && pullRequest.isOpen() {
+		// Only a rote PR is held back from auto-approval; the detail pane shows any hold.
+		if len(verdict.Held) > 0 && verdict.Attention == "rote" {
+			return []segment{{verdict.Attention, attentionStyle(verdict.Attention)}, {"·held", stylePending}}
+		}
 		return []segment{{verdict.Attention, attentionStyle(verdict.Attention)}}
 	}
 	return nil
