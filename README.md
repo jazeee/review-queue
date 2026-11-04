@@ -49,7 +49,12 @@ hidden except in Mine.
   Yellow = still pending; ~~struck~~ = fulfilled by someone's review or removed.
 - **Me** `new`, `re-req` (asked again after your review), `reviewed`,
   `+commits` (reviewed, but the head moved since), or `seen` (dismissed locally).
-- **Notes** flags open PRs with merge conflicts (red).
+- **Notes** flags open PRs with merge conflicts (red). Otherwise it shows the
+  [rote-review](../rote-review) bucket for the PR's current head: `rote`
+  (green, auto-approvable), `light`, `normal`, or `deep` (red). The detail pane
+  adds rote-review's one-line summary. Verdicts for an older head are not shown.
+  `~/.local/state/rote-review/<owner>-<repo>/verdicts.json` is re-read on each
+  poll and on focus, when it has changed.
 - **Title** is prefixed with the base branch, highlighted yellow, when it is not
   `main` (stacked PRs).
 - **Title** is struck through once none of your requests are pending, like Slack.
