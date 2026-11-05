@@ -14,11 +14,17 @@ import (
 
 // Verdict is the part of a rote-review verdict that review-queue shows.
 type Verdict struct {
-	Number      int       `json:"number"`
-	HeadOid     string    `json:"headOid"`
-	Attention   string    `json:"attention"`
-	Summary     string    `json:"summary"`
-	Held        []string  `json:"held"`
+	Number     int      `json:"number"`
+	HeadOid    string   `json:"headOid"`
+	Attention  string   `json:"attention"`
+	Summary    string   `json:"summary"`
+	Held       []string `json:"held"`
+	Violations []struct {
+		Rule   string `json:"rule"`
+		Path   string `json:"path"`
+		Detail string `json:"detail"`
+	} `json:"violations"`
+	Standards   []string  `json:"standards"`
 	EvaluatedAt time.Time `json:"evaluatedAt"`
 }
 
@@ -90,20 +96,27 @@ func renderNotes(pullRequest PullRequest) []segment {
 	return nil
 }
 
-// renderVerdictDetail word-wraps rote-review's summary and hold to width, for the detail
-// pane. Only the leading badge is styled, so wrapping never splits a style.
+// renderVerdictDetail word-wraps rote-review's summary, hold, standards violations, and
+// standards notes to width, for the detail pane. Only each line's leading label is styled,
+// so wrapping never splits a style.
 func renderVerdictDetail(pullRequest PullRequest, verdicts Verdicts, width int) []string {
 	verdict, found := verdicts.Lookup(pullRequest)
 	if !found {
 		return nil
 	}
 	text := attentionStyle(verdict.Attention).Render(verdict.Attention) + " rote-review: " + verdict.Summary
+	for _, violation := range verdict.Violations {
+		text += "\n" + styleBad.Render("✖ "+violation.Rule) + " " + filepath.Base(violation.Path) + ": " + violation.Detail
+	}
 	if len(verdict.Held) > 0 {
 		var held []string
 		for _, item := range verdict.Held {
 			held = append(held, strings.TrimPrefix(item, "unanswered "))
 		}
 		text += "\n" + styleHeld.Render(fmt.Sprintf("held: %d unanswered", len(verdict.Held))) + " " + strings.Join(held, " · ")
+	}
+	for _, note := range verdict.Standards {
+		text += "\n" + stylePending.Render("◦ standards") + " " + note
 	}
 	return strings.Split(ansi.Wrap(text, width, ""), "\n")
 }
