@@ -55,7 +55,8 @@ hidden except in Mine.
   waits on the author replying to reviewer feedback. While rote-review works on a PR
   it shows `⟳` with the stage (`fetch`, `checkout`, then chunks done out of total).
   Verdicts for an older head are not shown. The right side of the detail pane shows
-  rote-review's summary and any unanswered comments, word-wrapped.
+  rote-review's summary, standards violations (`✖`), unanswered comments, and standards
+  notes (`◦`), word-wrapped.
   `~/.local/state/rote-review/<owner>-<repo>/verdicts.json` is re-read on each poll,
   on focus, and every second while a screen runs, when it has changed.
 - **Notes** flags open PRs with merge conflicts (red).
