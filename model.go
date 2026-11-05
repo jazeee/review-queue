@@ -81,6 +81,8 @@ type Model struct {
 
 	lastClickNumber int
 	lastClickAt     time.Time
+	// screening is the rote-review run started with s or S, or nil.
+	screening *Screening
 	// watched holds PRs recently opened in the browser, keyed to when they were opened.
 	watched map[int]time.Time
 }
@@ -418,7 +420,19 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		model.mergePullRequests(message.PullRequests)
 		return model, nil
 
+	case screeningProgressMsg:
+		model.applyScreeningProgress(message)
+		return model, model.waitForEvent()
+
+	case screeningDoneMsg:
+		model.finishScreening(message)
+		return model, model.waitForEvent()
+
 	case clockTickMsg:
+		// rote-review rewrites verdicts as each PR finishes, including cache hits it never logs.
+		if model.screening != nil {
+			model.verdicts.Reload()
+		}
 		return model, tea.Tick(time.Second, func(time.Time) tea.Msg { return clockTickMsg{} })
 
 	case tea.MouseMsg:
@@ -582,6 +596,12 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		model.filters[model.view] = filter
 		model.cursor, model.offset = 0, 0
 		model.applyFilter()
+	case "s":
+		if hasRow {
+			model.screenSelected(row.PullRequest)
+		}
+	case "S":
+		model.startScreening("scan", nil, "scan")
 	case "r":
 		model.startScan()
 	case "R":

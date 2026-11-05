@@ -41,7 +41,7 @@ func TestNotesFlagARotePullRequestHeldByFeedback(t *testing.T) {
 	}}
 	render := func(number int) string {
 		text := ""
-		for _, part := range renderNotes(PullRequest{Number: number, HeadOid: "head", State: PullRequestOpen}, verdicts) {
+		for _, part := range renderReview(PullRequest{Number: number, HeadOid: "head", State: PullRequestOpen}, verdicts, nil) {
 			text += part.text
 		}
 		return text
