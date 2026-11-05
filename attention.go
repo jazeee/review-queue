@@ -83,16 +83,9 @@ func attentionStyle(attention string) lipgloss.Style {
 
 var styleHeld = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("0")).Background(lipgloss.Color("#ff8700"))
 
-func renderNotes(pullRequest PullRequest, verdicts Verdicts) []segment {
+func renderNotes(pullRequest PullRequest) []segment {
 	if pullRequest.isOpen() && pullRequest.Mergeable == "CONFLICTING" {
 		return []segment{{"conflicts", styleAlert}}
-	}
-	if verdict, found := verdicts.Lookup(pullRequest); found && pullRequest.isOpen() {
-		// Only a rote PR is held back from auto-approval; the detail pane shows any hold.
-		if len(verdict.Held) > 0 && verdict.Attention == "rote" {
-			return []segment{{verdict.Attention, attentionStyle(verdict.Attention)}, {"·held", styleHeld}}
-		}
-		return []segment{{verdict.Attention, attentionStyle(verdict.Attention)}}
 	}
 	return nil
 }

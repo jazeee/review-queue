@@ -122,7 +122,7 @@ type column struct {
 }
 
 func (model Model) columns() []column {
-	columns := []column{{"", 1}, {"PR", 6}, {"Age", 4}, {"Author", 16}, {"State", 8}, {"Lines", 6}, {"+", 5}, {"-", 5}, {"For", 26}, {"Me", 8}, {"Notes", 9}}
+	columns := []column{{"", 1}, {"PR", 6}, {"Age", 4}, {"Author", 16}, {"State", 8}, {"Lines", 6}, {"+", 5}, {"-", 5}, {"For", 26}, {"Me", 8}, {"Review", 9}, {"Notes", 9}}
 	used := 0
 	for _, entry := range columns {
 		used += entry.width + 1
@@ -160,7 +160,8 @@ func (model Model) renderRow(row QueueRow, selected bool) string {
 		{{fmt.Sprintf("%5d", pullRequest.Deletions), styleBad}},
 		renderTargets(row),
 		{renderMyStatus(row)},
-		renderNotes(pullRequest, model.verdicts),
+		renderReview(pullRequest, model.verdicts, model.screening),
+		renderNotes(pullRequest),
 		{{pullRequest.Title, titleStyle}},
 	}
 	if pullRequest.BaseRef != "main" {
@@ -208,6 +209,9 @@ func (model Model) renderHeader() string {
 	case !model.lastSyncedAt.IsZero():
 		status = styleDim.Render("synced " + formatAge(model.lastSyncedAt) + " ago")
 	}
+	if screeningStatus := model.renderScreeningStatus(); screeningStatus != "" {
+		status = screeningStatus + "  " + status
+	}
 	if model.lastError != "" {
 		status = styleError.Render(ansi.Truncate(model.lastError, 60, "…")) + " " + status
 	}
@@ -241,7 +245,7 @@ func (model Model) View() string {
 
 	lines = append(lines, model.renderDetailPane())
 
-	footer := styleDim.Render("o open · p pi · space seen · A all seen · u undo · / search · tab view · d drafts · r refresh · y copy · m mouse · q quit")
+	footer := styleDim.Render("o open · p pi · s screen · S screen all · space seen · A all seen · u undo · / search · tab view · d drafts · r refresh · y copy · m mouse · q quit")
 	switch {
 	case model.searching:
 		footer = model.searchInput.View()

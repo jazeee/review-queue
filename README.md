@@ -49,14 +49,16 @@ hidden except in Mine.
   Yellow = still pending; ~~struck~~ = fulfilled by someone's review or removed.
 - **Me** `new`, `re-req` (asked again after your review), `reviewed`,
   `+commits` (reviewed, but the head moved since), or `seen` (dismissed locally).
-- **Notes** flags open PRs with merge conflicts (red). Otherwise it shows the
-  [rote-review](../rote-review) bucket for the PR's current head, as a colored badge: `rote`
-  (green, auto-approvable), `light` (yellow), `normal` (orange), or `deep` (red). The detail pane
-  shows rote-review's summary in its right-hand column, word-wrapped. Verdicts for an older head are not shown.
-  `rote·held` (orange `·held`) means rote, but approval waits on the author replying to reviewer
-  feedback; the detail pane lists the unanswered comments for any bucket.
-  `~/.local/state/rote-review/<owner>-<repo>/verdicts.json` is re-read on each
-  poll and on focus, when it has changed.
+- **Review** shows the [rote-review](../rote-review) bucket for the PR's current head,
+  as a colored badge: `rote` (green, auto-approvable), `light` (yellow), `normal`
+  (orange), or `deep` (red). `rote·held` (orange `·held`) means rote, but approval
+  waits on the author replying to reviewer feedback. While rote-review works on a PR
+  it shows `⟳` with the stage (`fetch`, `checkout`, then chunks done out of total).
+  Verdicts for an older head are not shown. The right side of the detail pane shows
+  rote-review's summary and any unanswered comments, word-wrapped.
+  `~/.local/state/rote-review/<owner>-<repo>/verdicts.json` is re-read on each poll,
+  on focus, and every second while a screen runs, when it has changed.
+- **Notes** flags open PRs with merge conflicts (red).
 - **Title** is prefixed with the base branch, highlighted yellow, when it is not
   `main` (stacked PRs).
 - **Title** is struck through once none of your requests are pending, like Slack.
@@ -75,6 +77,8 @@ newer review request makes it unread again, even after a local dismissal.
 | `tab` / `shift+tab` / `1`–`4` | switch view |
 | `o` / `enter` | open the PR in the browser |
 | `p` | open pi (tmux split, new terminal) in a worktree on the PR head branch |
+| `s` | screen the selected PR with `rote-review check --always` (re-screens with `--fresh` when its head already has a verdict) |
+| `S` | run a full `rote-review scan` (never approves or comments); one rote-review run at a time, shown in the header |
 | `space` | toggle seen (local dismissal) |
 | `A` `A` | mark every visible row seen |
 | `u` | undo the last seen/all-seen |
