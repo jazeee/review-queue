@@ -34,7 +34,7 @@ hidden except in Mine.
 
 | View    | Shows                                                                  |
 |---------|------------------------------------------------------------------------|
-| Inbox   | Unread: you have not reviewed since the latest request, and not marked seen |
+| Inbox   | Unread: you have not reviewed since the latest request, and not marked seen. Stacked PRs (base not `main`) are hidden until you press `n`; the header counts them |
 | Waiting | Open PRs where a request to you or your team is still pending          |
 | All     | Every PR that requested you or your teams in the window                |
 | Mine    | Your unmerged PRs without a `WIP` label, with their pending reviewers  |
@@ -84,6 +84,7 @@ newer review request makes it unread again, even after a local dismissal.
 | `A` `A` | mark every visible row seen |
 | `u` | undo the last seen/all-seen |
 | `d` | toggle drafts only for the current tab (tab shows ✎) |
+| `n` | toggle stacked PRs (base not `main`) for the current tab; hidden by default in Inbox only |
 | `/` | filter the current tab (regex, case-insensitive; literal fallback; tab shows /); `esc` clears |
 | `y` | copy the PR URL |
 | `r` / `R` | refresh now / rescan the whole window (queued if a scan is running) |

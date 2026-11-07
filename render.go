@@ -200,6 +200,9 @@ func (model Model) renderHeader() string {
 	if model.filters[model.view].draftsOnly {
 		left += "  " + stylePending.Render("drafts only")
 	}
+	if hidden := model.countHiddenStacked(); hidden > 0 {
+		left += "  " + styleDim.Render(fmt.Sprintf("%d stacked hidden (n)", hidden))
+	}
 	var status string
 	switch {
 	case model.scanning && model.scanTotal > 0:
@@ -245,7 +248,7 @@ func (model Model) View() string {
 
 	lines = append(lines, model.renderDetailPane())
 
-	footer := styleDim.Render("o open · p pi · s screen · S screen all · space seen · A all seen · u undo · / search · tab view · d drafts · r refresh · y copy · m mouse · q quit")
+	footer := styleDim.Render("o open · p pi · s screen · S screen all · n stacked · space seen · A all seen · u undo · / search · tab view · d drafts · r refresh · y copy · m mouse · q quit")
 	switch {
 	case model.searching:
 		footer = model.searchInput.View()
