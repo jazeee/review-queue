@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -11,22 +10,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
-
-type ViewKind string
-
-const (
-	ViewInbox   ViewKind = "Inbox"
-	ViewWaiting ViewKind = "Waiting"
-	ViewAll     ViewKind = "All"
-	ViewMine    ViewKind = "Mine"
-)
-
-var views = []ViewKind{ViewInbox, ViewWaiting, ViewAll, ViewMine}
-
-type viewFilter struct {
-	draftsOnly bool
-	query      string
-}
 
 type identityMsg struct {
 	Identity Identity
@@ -104,7 +87,7 @@ func NewModel(repository string, checkout string, window time.Duration) Model {
 		mouseEnabled: true,
 		events:       make(chan tea.Msg, 64),
 		watched:      map[int]time.Time{},
-		filters:      map[ViewKind]viewFilter{},
+		filters:      map[ViewKind]viewFilter{ViewInbox: {hideStacked: true}},
 	}
 	model.verdicts.Reload()
 	model.rebuildRows()
@@ -223,93 +206,6 @@ func (model *Model) rebuildRows() {
 		return leftRow.PullRequest.Number > rightRow.PullRequest.Number
 	})
 	model.applyFilter()
-}
-
-func belongsToView(row QueueRow, view ViewKind, draftsOnly bool) bool {
-	isMine := row.MyStatus == MyStatusAuthor
-	isDraft := row.PullRequest.State == PullRequestDraft
-	if draftsOnly && !isDraft {
-		return false
-	}
-	if !draftsOnly && isDraft && !isMine {
-		return false
-	}
-	switch view {
-	case ViewInbox:
-		return row.Unread
-	case ViewWaiting:
-		return !isMine && row.PullRequest.isOpen() && !row.Settled() && row.MyStatus != MyStatusReviewed
-	case ViewAll:
-		return !isMine
-	default:
-		return isMine && row.PullRequest.State != PullRequestMerged && !row.PullRequest.hasLabel("WIP")
-	}
-}
-
-func (model Model) countView(view ViewKind) int {
-	count := 0
-	for _, row := range model.allRows {
-		if belongsToView(row, view, model.filters[view].draftsOnly) {
-			count++
-		}
-	}
-	return count
-}
-
-func (model *Model) applyFilter() {
-	selectedNumber := 0
-	if model.cursor < len(model.rows) {
-		selectedNumber = model.rows[model.cursor].PullRequest.Number
-	}
-	model.rows = nil
-	filter := model.filters[model.view]
-	var pattern *regexp.Regexp
-	if filter.query != "" {
-		var compileError error
-		if pattern, compileError = regexp.Compile("(?i)" + filter.query); compileError != nil {
-			pattern = regexp.MustCompile("(?i)" + regexp.QuoteMeta(filter.query))
-		}
-	}
-	for _, row := range model.allRows {
-		if !belongsToView(row, model.view, filter.draftsOnly) {
-			continue
-		}
-		if pattern != nil && !pattern.MatchString(searchableText(row)) {
-			continue
-		}
-		model.rows = append(model.rows, row)
-	}
-	for index, row := range model.rows {
-		if row.PullRequest.Number == selectedNumber {
-			model.cursor = index
-			model.clampCursor()
-			return
-		}
-	}
-	model.clampCursor()
-}
-
-func (model *Model) switchView(view ViewKind) {
-	model.view = view
-	model.cursor, model.offset = 0, 0
-	model.searchInput.SetValue(model.filters[view].query)
-	model.applyFilter()
-}
-
-func (model *Model) setQuery(query string) {
-	filter := model.filters[model.view]
-	filter.query = query
-	model.filters[model.view] = filter
-	model.searchInput.SetValue(query)
-	model.applyFilter()
-}
-
-func searchableText(row QueueRow) string {
-	parts := []string{fmt.Sprintf("#%d", row.PullRequest.Number), row.PullRequest.Title, row.PullRequest.Author}
-	for _, target := range row.Targets {
-		parts = append(parts, target.Reviewer.Name, target.ResolvedBy)
-	}
-	return strings.Join(parts, " ")
 }
 
 func (model *Model) clampCursor() {
@@ -595,6 +491,11 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		filter.draftsOnly = !filter.draftsOnly
 		model.filters[model.view] = filter
 		model.cursor, model.offset = 0, 0
+		model.applyFilter()
+	case "n":
+		filter := model.filters[model.view]
+		filter.hideStacked = !filter.hideStacked
+		model.filters[model.view] = filter
 		model.applyFilter()
 	case "s":
 		if hasRow {

@@ -97,12 +97,23 @@ func TestDraftsReachInboxOnlyInDraftsMode(t *testing.T) {
 		RequestEvents: []RequestEvent{{Reviewer: security, Action: RequestAdded, At: at(0)}},
 	}
 	row, _ := BuildQueueRow(pullRequest, viewer, time.Time{})
-	if belongsToView(row, ViewInbox, false) || !belongsToView(row, ViewInbox, true) {
+	if belongsToView(row, ViewInbox, viewFilter{}) || !belongsToView(row, ViewInbox, viewFilter{draftsOnly: true}) {
 		t.Fatalf("expected an unread draft only in drafts mode")
 	}
 
 	mine, _ := BuildQueueRow(PullRequest{Author: "jazeee", State: PullRequestDraft, BaseRef: "main"}, viewer, time.Time{})
-	if !belongsToView(mine, ViewMine, false) {
+	if !belongsToView(mine, ViewMine, viewFilter{}) {
 		t.Fatalf("expected my draft to stay in Mine outside drafts mode")
+	}
+}
+
+func TestHideStackedKeepsOnlyPullRequestsIntoMain(t *testing.T) {
+	stacked := PullRequest{
+		Author: "alice", State: PullRequestOpen, BaseRef: "alice/part-1",
+		RequestEvents: []RequestEvent{{Reviewer: security, Action: RequestAdded, At: at(0)}},
+	}
+	row, _ := BuildQueueRow(stacked, viewer, time.Time{})
+	if belongsToView(row, ViewInbox, viewFilter{hideStacked: true}) || !belongsToView(row, ViewInbox, viewFilter{}) {
+		t.Fatalf("expected a stacked PR only when stacked PRs are shown")
 	}
 }
