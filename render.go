@@ -122,7 +122,7 @@ type column struct {
 }
 
 func (model Model) columns() []column {
-	columns := []column{{"", 1}, {"PR", 6}, {"Age", 4}, {"Author", 16}, {"State", 8}, {"Lines", 6}, {"+", 5}, {"-", 5}, {"For", 26}, {"Me", 8}, {"Review", 9}, {"Notes", 9}}
+	columns := []column{{"", 1}, {"PR", 6}, {"Age", 4}, {"Author", 16}, {"State", 8}, {"+", 6}, {"-", 5}, {"For", 26}, {"Me", 8}, {"Review", 9}, {"Notes", 9}}
 	used := 0
 	for _, entry := range columns {
 		used += entry.width + 1
@@ -155,8 +155,7 @@ func (model Model) renderRow(row QueueRow, selected bool) string {
 		{{formatAge(age), styleDim}},
 		{{pullRequest.Author, lipgloss.NewStyle()}},
 		renderState(pullRequest),
-		{{fmt.Sprintf("%5d ", pullRequest.Additions+pullRequest.Deletions), sizeStyle(pullRequest.Additions + pullRequest.Deletions)}},
-		{{fmt.Sprintf("%5d", pullRequest.Additions), styleGood}},
+		{{fmt.Sprintf("%5d ", pullRequest.Additions), sizeStyle(pullRequest.Additions)}},
 		{{fmt.Sprintf("%5d", pullRequest.Deletions), styleBad}},
 		renderTargets(row),
 		{renderMyStatus(row)},

@@ -42,9 +42,8 @@ hidden except in Mine.
 ## Columns
 
 - **●** unread.
-- **Lines** additions + deletions, black at ≤1, fading to green at 500,
-  then through yellow to red at 1000+, then
-  **+** additions and **-** deletions.
+- **+** added lines, shaded black at ≤1, fading to green at 500, then through
+  yellow to red at 1000+, and **-** deleted lines.
 - **For** the requested targets that are yours (`@me` or team slugs).
   Yellow = still pending; ~~struck~~ = fulfilled by someone's review or removed.
 - **Me** `new`, `re-req` (asked again after your review), `reviewed`,
