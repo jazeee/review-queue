@@ -200,7 +200,7 @@ func (model Model) renderHeader() string {
 		left += "  " + stylePending.Render("drafts only")
 	}
 	if hidden := model.countHiddenStacked(); hidden > 0 {
-		left += "  " + styleDim.Render(fmt.Sprintf("%d stacked hidden (n)", hidden))
+		left += "  " + stylePending.Render(fmt.Sprintf("%d stacked hidden (n)", hidden))
 	}
 	var status string
 	switch {
