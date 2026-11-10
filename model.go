@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -64,6 +65,9 @@ type Model struct {
 
 	lastClickNumber int
 	lastClickAt     time.Time
+	// dialog shows the full rote-review verdict for dialogNumber while open, or is nil.
+	dialog       *viewport.Model
+	dialogNumber int
 	// screening is the rote-review run started with s or S, or nil.
 	screening *Screening
 	// watched holds PRs recently opened in the browser, keyed to when they were opened.
@@ -244,6 +248,11 @@ func (model *Model) setDismissed(rows []QueueRow, dismissed bool) {
 }
 
 func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	if model.dialog != nil {
+		if handled, command := model.updateVerdictDialog(message); handled {
+			return model, command
+		}
+	}
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		model.width, model.height = message.Width, message.Height
@@ -453,6 +462,8 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 			terminalName, launchError := LaunchPiInTerminal(path)
 			return piLaunchedMsg{Text: fmt.Sprintf("opened pi in %s: %s", terminalName, path), Err: launchError}
 		}
+	case "v":
+		model.openVerdictDialog()
 	case "y":
 		if hasRow {
 			if copyError := CopyToSystemClipboard(row.PullRequest.Url); copyError != nil {
