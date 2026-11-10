@@ -250,8 +250,10 @@ func (model Model) View() string {
 
 	lines = append(lines, model.renderDetailPane())
 
-	footer := styleDim.Render("o open · p pi · s screen · S screen all · v view review · n stacked · space seen · A all seen · u undo · / search · tab view · d drafts · r refresh · y copy · m mouse · q quit")
+	footer := styleDim.Render("o open · p pi · s screen · S screen all · v view review · c post feedback · n stacked · space seen · A all seen · u undo · / search · tab view · d drafts · r refresh · y copy · m mouse · q quit")
 	switch {
+	case model.writingGuidance:
+		footer = model.guidanceInput.View()
 	case model.searching:
 		footer = model.searchInput.View()
 	case model.flash != "":
