@@ -29,3 +29,18 @@ func TestScreeningProgressFollowsRoteReviewLogs(t *testing.T) {
 		}
 	}
 }
+
+func TestScreeningProgressFollowsCommentLogs(t *testing.T) {
+	model := Model{screening: &Screening{Progress: map[int]ScreeningProgress{7: {Stage: "start"}}}}
+	stages := map[string]string{"fetching": "fetch", "drafting comments": "draft", "posting 3 inline comments": "post"}
+	for _, event := range []string{"fetching", "drafting comments", "posting 3 inline comments"} {
+		model.applyScreeningProgress(screeningProgressMsg{Number: 7, Event: event})
+		if got := model.screening.Progress[7].Stage; got != stages[event] {
+			t.Fatalf("after %q: stage %q, want %q", event, got, stages[event])
+		}
+	}
+	model.applyScreeningProgress(screeningProgressMsg{Number: 7, Event: "posted https://github.com/o/r/pull/7#pullrequestreview-1"})
+	if _, running := model.screening.Progress[7]; running || model.screening.PostedUrl != "https://github.com/o/r/pull/7#pullrequestreview-1" {
+		t.Fatalf("posted review not recorded: %+v", model.screening)
+	}
+}

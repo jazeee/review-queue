@@ -17,6 +17,8 @@ type Screening struct {
 	StartedAt time.Time
 	// Progress holds the stage of each PR rote-review is working on right now.
 	Progress map[int]ScreeningProgress
+	// PostedUrl is the review rote-review comment posted, if any.
+	PostedUrl string
 }
 
 type ScreeningProgress struct {
@@ -95,6 +97,14 @@ func (model *Model) applyScreeningProgress(message screeningProgressMsg) {
 		progress = ScreeningProgress{Stage: "screen", ChunksTotal: total}
 	case chunkFinished.MatchString(message.Event):
 		progress.ChunksDone++
+	case strings.HasPrefix(message.Event, "drafting"):
+		progress.Stage = "draft"
+	case strings.HasPrefix(message.Event, "posting"):
+		progress.Stage = "post"
+	case strings.HasPrefix(message.Event, "posted "):
+		model.screening.PostedUrl = strings.TrimPrefix(message.Event, "posted ")
+		delete(model.screening.Progress, message.Number)
+		return
 	default:
 		return
 	}
@@ -112,6 +122,8 @@ func (model *Model) finishScreening(message screeningDoneMsg) {
 		if model.lastError == "" {
 			model.lastError = "rote-review: " + message.Err.Error()
 		}
+	} else if model.screening != nil && model.screening.PostedUrl != "" {
+		model.flash = "posted " + model.screening.PostedUrl
 	} else if model.screening != nil {
 		model.flash = fmt.Sprintf("rote-review finished %s in %s", model.screening.Label, formatAge(model.screening.StartedAt))
 	}

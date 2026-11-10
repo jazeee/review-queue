@@ -56,6 +56,12 @@ func (model *Model) updateVerdictDialog(message tea.Msg) (bool, tea.Cmd) {
 					model.openPullRequest(row.PullRequest)
 				}
 			}
+		case "c":
+			for _, row := range model.allRows {
+				if row.PullRequest.Number == model.dialogNumber {
+					model.startGuidance(row.PullRequest)
+				}
+			}
 		case "g", "home":
 			model.dialog.GotoTop()
 		case "G", "end":
@@ -72,8 +78,16 @@ func (model *Model) updateVerdictDialog(message tea.Msg) (bool, tea.Cmd) {
 
 func (model Model) renderVerdictDialog() string {
 	header := styleTabFocus.Render(fmt.Sprintf("rote-review #%d", model.dialogNumber)) +
-		styleDim.Render("  j/k pgup/pgdn g/G scroll · o open PR · esc close")
+		styleDim.Render("  j/k pgup/pgdn g/G scroll · c post feedback · o open PR · esc close") + "  " + model.renderScreeningStatus()
 	footer := styleDim.Render(fmt.Sprintf("%3.0f%%", model.dialog.ScrollPercent()*100))
+	switch {
+	case model.writingGuidance:
+		footer = model.guidanceInput.View()
+	case model.lastError != "":
+		footer = styleError.Render(model.lastError)
+	case model.flash != "":
+		footer = stylePending.Render(model.flash)
+	}
 	return header + "\n" + model.dialog.View() + "\n" + footer
 }
 

@@ -48,6 +48,11 @@ type Model struct {
 	searching   bool
 	searchInput textinput.Model
 
+	// writingGuidance shows guidanceInput, for posting rote-review feedback on guidanceNumber.
+	writingGuidance bool
+	guidanceInput   textinput.Model
+	guidanceNumber  int
+
 	width, height int
 	mouseEnabled  bool
 
@@ -78,20 +83,24 @@ func NewModel(repository string, checkout string, window time.Duration) Model {
 	store := NewStore(repository)
 	searchInput := textinput.New()
 	searchInput.Prompt = "/"
+	guidanceInput := textinput.New()
+	guidanceInput.Prompt = "guidance for pi (enter posts the review, esc cancels)> "
+	guidanceInput.CharLimit = 2000
 	model := Model{
-		repository:   repository,
-		checkout:     checkout,
-		window:       window,
-		store:        store,
-		cache:        store.LoadCache(),
-		dismissals:   store.LoadDismissals(),
-		verdicts:     NewVerdicts(repository),
-		view:         ViewInbox,
-		searchInput:  searchInput,
-		mouseEnabled: true,
-		events:       make(chan tea.Msg, 64),
-		watched:      map[int]time.Time{},
-		filters:      map[ViewKind]viewFilter{ViewInbox: {hideStacked: true}},
+		repository:    repository,
+		checkout:      checkout,
+		window:        window,
+		store:         store,
+		cache:         store.LoadCache(),
+		dismissals:    store.LoadDismissals(),
+		verdicts:      NewVerdicts(repository),
+		view:          ViewInbox,
+		searchInput:   searchInput,
+		guidanceInput: guidanceInput,
+		mouseEnabled:  true,
+		events:        make(chan tea.Msg, 64),
+		watched:       map[int]time.Time{},
+		filters:       map[ViewKind]viewFilter{ViewInbox: {hideStacked: true}},
 	}
 	model.verdicts.Reload()
 	model.rebuildRows()
@@ -248,6 +257,9 @@ func (model *Model) setDismissed(rows []QueueRow, dismissed bool) {
 }
 
 func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	if key, isKey := message.(tea.KeyMsg); isKey && model.writingGuidance {
+		return model.updateGuidance(key)
+	}
 	if model.dialog != nil {
 		if handled, command := model.updateVerdictDialog(message); handled {
 			return model, command
@@ -464,6 +476,10 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "v":
 		model.openVerdictDialog()
+	case "c":
+		if hasRow {
+			model.startGuidance(row.PullRequest)
+		}
 	case "y":
 		if hasRow {
 			if copyError := CopyToSystemClipboard(row.PullRequest.Url); copyError != nil {
