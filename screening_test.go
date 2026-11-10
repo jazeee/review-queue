@@ -44,3 +44,18 @@ func TestScreeningProgressFollowsCommentLogs(t *testing.T) {
 		t.Fatalf("posted review not recorded: %+v", model.screening)
 	}
 }
+
+func TestTendProgressHasItsOwnSlot(t *testing.T) {
+	model := Model{
+		screening: &Screening{Progress: map[int]ScreeningProgress{8: {Stage: "fetch"}}},
+		tending:   &Screening{Progress: map[int]ScreeningProgress{}},
+	}
+	model.applyScreeningProgress(screeningProgressMsg{IsTend: true, Number: 7, Event: "addressing 2 threads and 0 comments (loop 1/5)"})
+	if model.tending.Progress[7].Stage != "fix" || model.screening.Progress[8].Stage != "fetch" {
+		t.Fatalf("tend progress leaked between slots: %+v %+v", model.tending, model.screening)
+	}
+	model.applyScreeningProgress(screeningProgressMsg{IsTend: true, Number: 7, Event: "done: pushed 0123456789; replied to 2 threads, resolved 2"})
+	if _, running := model.tending.Progress[7]; running || !model.tending.Touched {
+		t.Fatalf("finished tend loop still shown: %+v", model.tending)
+	}
+}
