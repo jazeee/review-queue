@@ -225,6 +225,9 @@ func (model Model) View() string {
 	if model.width == 0 {
 		return ""
 	}
+	if model.dialog != nil {
+		return model.renderVerdictDialog()
+	}
 	var lines []string
 	lines = append(lines, model.renderHeader())
 
@@ -247,7 +250,7 @@ func (model Model) View() string {
 
 	lines = append(lines, model.renderDetailPane())
 
-	footer := styleDim.Render("o open · p pi · s screen · S screen all · n stacked · space seen · A all seen · u undo · / search · tab view · d drafts · r refresh · y copy · m mouse · q quit")
+	footer := styleDim.Render("o open · p pi · s screen · S screen all · v view review · n stacked · space seen · A all seen · u undo · / search · tab view · d drafts · r refresh · y copy · m mouse · q quit")
 	switch {
 	case model.searching:
 		footer = model.searchInput.View()

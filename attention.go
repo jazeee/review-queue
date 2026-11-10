@@ -24,7 +24,19 @@ type Verdict struct {
 		Path   string `json:"path"`
 		Detail string `json:"detail"`
 	} `json:"violations"`
-	Standards   []string  `json:"standards"`
+	Standards     []string `json:"standards"`
+	Kind          string   `json:"kind"`
+	Decision      string   `json:"decision"`
+	Reasons       []string `json:"reasons"`
+	ScreenedLines int      `json:"screenedLines"`
+	SkippedFiles  int      `json:"skippedFiles"`
+	Chunks        []struct {
+		Verdict    string `json:"verdict"`
+		Confidence string `json:"confidence"`
+		Risk       string `json:"risk"`
+		Category   string `json:"category"`
+		Summary    string `json:"summary"`
+	} `json:"chunks"`
 	EvaluatedAt time.Time `json:"evaluatedAt"`
 }
 

@@ -79,6 +79,7 @@ newer review request makes it unread again, even after a local dismissal.
 | `p` | open pi (tmux split, new terminal) in a worktree on the PR head branch |
 | `s` | screen the selected PR with `rote-review check --always` (re-screens with `--fresh` when its head already has a verdict) |
 | `S` | run a full `rote-review scan` (never approves or comments); one rote-review run at a time, shown in the header |
+| `v` | view the selected PR's full rote-review verdict in a scrollable dialog (summary, violations, unanswered comments, standards notes, concerns, chunks); `j`/`k` `pgup`/`pgdn` `g`/`G` or the wheel scroll, `o` opens the PR, `esc` closes |
 | `space` | toggle seen (local dismissal) |
 | `A` `A` | mark every visible row seen |
 | `u` | undo the last seen/all-seen |
