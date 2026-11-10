@@ -15,10 +15,11 @@ func main() {
 	home, _ := os.UserHomeDir()
 	checkout := flag.String("checkout", filepath.Join(home, "code", "notable", "vivaa"), "Local clone of the repository, used by p to create worktrees.")
 	days := flag.Int("days", 14, "How many days of review requests to keep.")
+	tend := flag.Bool("tend", true, "Run `rote-review tend` every few minutes, so pi addresses feedback on your PRs and marks drafts ready.")
 	flag.Parse()
 
 	program := tea.NewProgram(
-		NewModel(*repository, *checkout, time.Duration(*days)*24*time.Hour),
+		NewModel(*repository, *checkout, time.Duration(*days)*24*time.Hour, *tend),
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 		tea.WithReportFocus(),

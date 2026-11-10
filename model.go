@@ -73,13 +73,18 @@ type Model struct {
 	// dialog shows the full rote-review verdict for dialogNumber while open, or is nil.
 	dialog       *viewport.Model
 	dialogNumber int
-	// screening is the rote-review run started with s or S, or nil.
+	// screening is the rote-review run started with s, S, or c, or nil.
 	screening *Screening
+	// tending is the background `rote-review tend` pass, started every tendInterval.
+	tending     *Screening
+	lastTendAt  time.Time
+	isTending   bool
+	automations Automations
 	// watched holds PRs recently opened in the browser, keyed to when they were opened.
 	watched map[int]time.Time
 }
 
-func NewModel(repository string, checkout string, window time.Duration) Model {
+func NewModel(repository string, checkout string, window time.Duration, isTending bool) Model {
 	store := NewStore(repository)
 	searchInput := textinput.New()
 	searchInput.Prompt = "/"
@@ -94,6 +99,8 @@ func NewModel(repository string, checkout string, window time.Duration) Model {
 		cache:         store.LoadCache(),
 		dismissals:    store.LoadDismissals(),
 		verdicts:      NewVerdicts(repository),
+		automations:   NewAutomations(repository),
+		isTending:     isTending,
 		view:          ViewInbox,
 		searchInput:   searchInput,
 		guidanceInput: guidanceInput,
@@ -103,6 +110,7 @@ func NewModel(repository string, checkout string, window time.Duration) Model {
 		filters:       map[ViewKind]viewFilter{ViewInbox: {hideStacked: true}},
 	}
 	model.verdicts.Reload()
+	model.automations.Reload()
 	model.rebuildRows()
 	return model
 }
@@ -313,11 +321,16 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case pollTickMsg:
 		model.verdicts.Reload()
+		model.automations.Reload()
+		if model.isTending && time.Since(model.lastTendAt) > tendInterval {
+			model.startTend()
+		}
 		model.startScan()
 		return model, model.refreshWatched()
 
 	case tea.FocusMsg:
 		model.verdicts.Reload()
+		model.automations.Reload()
 		model.startScan()
 		return model, model.refreshWatched()
 
@@ -341,14 +354,27 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		model.applyScreeningProgress(message)
 		return model, model.waitForEvent()
 
+	case automationChangedMsg:
+		if message.Err != nil {
+			model.lastError = message.Err.Error()
+			return model, nil
+		}
+		model.flash = message.Text
+		model.automations.Reload()
+		if message.IsResume && model.isTending {
+			model.startTend()
+		}
+		return model, nil
+
 	case screeningDoneMsg:
 		model.finishScreening(message)
 		return model, model.waitForEvent()
 
 	case clockTickMsg:
 		// rote-review rewrites verdicts as each PR finishes, including cache hits it never logs.
-		if model.screening != nil {
+		if model.screening != nil || model.tending != nil {
 			model.verdicts.Reload()
+			model.automations.Reload()
 		}
 		return model, tea.Tick(time.Second, func(time.Time) tea.Msg { return clockTickMsg{} })
 
@@ -434,7 +460,7 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		model.cursor = 0
 	case "end", "G":
 		model.cursor = len(model.rows) - 1
-	case "tab", "shift+tab", "1", "2", "3", "4":
+	case "tab", "shift+tab", "1", "2", "3", "4", "5":
 		index := 0
 		for candidate, view := range views {
 			if view == model.view {
@@ -479,6 +505,12 @@ func (model Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "c":
 		if hasRow {
 			model.startGuidance(row.PullRequest)
+		}
+	case "a", "D":
+		if hasRow && row.MyStatus == MyStatusAuthor {
+			command := map[string]string{"a": "resume", "D": "draft"}[key]
+			model.flash = fmt.Sprintf("rote-review %s #%d…", command, row.PullRequest.Number)
+			return model, model.changeAutomation(command, row.PullRequest.Number)
 		}
 	case "y":
 		if hasRow {

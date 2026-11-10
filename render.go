@@ -101,6 +101,14 @@ func renderState(pullRequest PullRequest) []segment {
 	return segments
 }
 
+// renderMeColumn shows the feedback-loop automation on your own open PRs.
+func (model Model) renderMeColumn(row QueueRow) segment {
+	if row.MyStatus == MyStatusAuthor && row.PullRequest.isOpen() {
+		return renderAutomation(model.automations.Lookup(row.PullRequest.Number))
+	}
+	return renderMyStatus(row)
+}
+
 func renderMyStatus(row QueueRow) segment {
 	switch {
 	case row.MyStatus == MyStatusAuthor:
@@ -158,8 +166,8 @@ func (model Model) renderRow(row QueueRow, selected bool) string {
 		{{fmt.Sprintf("%5d ", pullRequest.Additions), sizeStyle(pullRequest.Additions)}},
 		{{fmt.Sprintf("%5d", pullRequest.Deletions), styleBad}},
 		renderTargets(row),
-		{renderMyStatus(row)},
-		renderReview(pullRequest, model.verdicts, model.screening),
+		{model.renderMeColumn(row)},
+		renderReview(pullRequest, model.verdicts, model.screening, model.tending),
 		renderNotes(pullRequest),
 		{{pullRequest.Title, titleStyle}},
 	}
@@ -250,7 +258,7 @@ func (model Model) View() string {
 
 	lines = append(lines, model.renderDetailPane())
 
-	footer := styleDim.Render("o open · p pi · s screen · S screen all · v view review · c post feedback · n stacked · space seen · A all seen · u undo · / search · tab view · d drafts · r refresh · y copy · m mouse · q quit")
+	footer := styleDim.Render("o open · p pi · s screen · S screen all · v view review · c post feedback · a/D resume/draft mine · n stacked · space seen · A all seen · u undo · / search · tab view · d drafts · r refresh · y copy · m mouse · q quit")
 	switch {
 	case model.writingGuidance:
 		footer = model.guidanceInput.View()

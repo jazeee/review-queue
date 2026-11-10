@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// Screening is one rote-review run started from the TUI; only one runs at a time,
-// since rote-review itself holds an exclusive lock.
+// Screening is one rote-review run started from the TUI. At most two run at once: one you
+// started (s, S, c) and one background tend pass.
 type Screening struct {
 	Label     string
 	StartedAt time.Time
@@ -19,6 +19,8 @@ type Screening struct {
 	Progress map[int]ScreeningProgress
 	// PostedUrl is the review rote-review comment posted, if any.
 	PostedUrl string
+	// Touched is set once rote-review reports working on any PR.
+	Touched bool
 }
 
 type ScreeningProgress struct {
@@ -28,11 +30,14 @@ type ScreeningProgress struct {
 }
 
 type screeningProgressMsg struct {
+	// IsTend marks events from the background tend run, which has its own slot.
+	IsTend bool
 	Number int
 	Event  string
 }
 
 type screeningDoneMsg struct {
+	IsTend bool
 	Err    error
 	Detail string
 }
@@ -44,13 +49,33 @@ var (
 	chunkFinished    = regexp.MustCompile(`^chunk \d+/\d+ →`)
 )
 
-// startScreening runs rote-review with arguments and streams each PR's progress onto
-// the model's event channel. numbers are marked as starting before rote-review logs.
+// slot returns the field holding the background tend run, or the run you started.
+func (model *Model) slot(isTend bool) **Screening {
+	if isTend {
+		return &model.tending
+	}
+	return &model.screening
+}
+
+// startScreening runs rote-review with arguments in your slot (s, S, c), streaming each
+// PR's progress onto the model's event channel. numbers show as starting right away.
 func (model *Model) startScreening(label string, numbers []int, arguments ...string) {
 	if model.screening != nil {
 		model.flash = "rote-review is already running " + model.screening.Label
 		return
 	}
+	model.launchRoteReview(false, label, numbers, arguments)
+}
+
+// startTend runs a background `rote-review tend` pass unless one is already running.
+func (model *Model) startTend() {
+	if model.tending == nil {
+		model.lastTendAt = time.Now()
+		model.launchRoteReview(true, "tend", nil, []string{"tend"})
+	}
+}
+
+func (model *Model) launchRoteReview(isTend bool, label string, numbers []int, arguments []string) {
 	command := exec.Command("rote-review", append(arguments, "--repo", model.repository, "--checkout", model.checkout)...)
 	logs, pipeError := command.StderrPipe()
 	if pipeError != nil {
@@ -61,10 +86,11 @@ func (model *Model) startScreening(label string, numbers []int, arguments ...str
 		model.lastError = "rote-review: " + startError.Error()
 		return
 	}
-	model.screening = &Screening{Label: label, StartedAt: time.Now(), Progress: map[int]ScreeningProgress{}}
+	run := &Screening{Label: label, StartedAt: time.Now(), Progress: map[int]ScreeningProgress{}}
 	for _, number := range numbers {
-		model.screening.Progress[number] = ScreeningProgress{Stage: "start"}
+		run.Progress[number] = ScreeningProgress{Stage: "start"}
 	}
+	*model.slot(isTend) = run
 	events := model.events
 	go func() {
 		scanner := bufio.NewScanner(logs)
@@ -73,20 +99,22 @@ func (model *Model) startScreening(label string, numbers []int, arguments ...str
 			line := scanner.Text()
 			if match := screeningLogLine.FindStringSubmatch(line); match != nil {
 				number, _ := strconv.Atoi(match[1])
-				events <- screeningProgressMsg{Number: number, Event: match[2]}
+				events <- screeningProgressMsg{IsTend: isTend, Number: number, Event: match[2]}
 			} else if strings.TrimSpace(line) != "" {
 				detail = line
 			}
 		}
-		events <- screeningDoneMsg{Err: command.Wait(), Detail: detail}
+		events <- screeningDoneMsg{IsTend: isTend, Err: command.Wait(), Detail: detail}
 	}()
 }
 
 func (model *Model) applyScreeningProgress(message screeningProgressMsg) {
-	if model.screening == nil {
+	run := *model.slot(message.IsTend)
+	if run == nil {
 		return
 	}
-	progress := model.screening.Progress[message.Number]
+	run.Touched = true
+	progress := run.Progress[message.Number]
 	switch {
 	case strings.HasPrefix(message.Event, "fetching"):
 		progress = ScreeningProgress{Stage: "fetch"}
@@ -101,34 +129,48 @@ func (model *Model) applyScreeningProgress(message screeningProgressMsg) {
 		progress.Stage = "draft"
 	case strings.HasPrefix(message.Event, "posting"):
 		progress.Stage = "post"
+	case strings.HasPrefix(message.Event, "addressing"):
+		progress.Stage = "fix"
+	case strings.HasPrefix(message.Event, "marking ready"):
+		progress.Stage = "ready"
 	case strings.HasPrefix(message.Event, "posted "):
-		model.screening.PostedUrl = strings.TrimPrefix(message.Event, "posted ")
-		delete(model.screening.Progress, message.Number)
+		run.PostedUrl = strings.TrimPrefix(message.Event, "posted ")
+		delete(run.Progress, message.Number)
+		return
+	case strings.HasPrefix(message.Event, "done") || strings.HasPrefix(message.Event, "needs manual review"):
+		delete(run.Progress, message.Number)
+		model.automations.Reload()
 		return
 	default:
 		return
 	}
 	if progress.ChunksTotal > 0 && progress.ChunksDone >= progress.ChunksTotal {
-		delete(model.screening.Progress, message.Number)
+		delete(run.Progress, message.Number)
 		model.verdicts.Reload()
 		return
 	}
-	model.screening.Progress[message.Number] = progress
+	run.Progress[message.Number] = progress
 }
 
+// finishScreening reports the run's outcome; a background tend pass that did nothing
+// stays quiet.
 func (model *Model) finishScreening(message screeningDoneMsg) {
-	if message.Err != nil {
+	slot := model.slot(message.IsTend)
+	run := *slot
+	switch {
+	case message.Err != nil:
 		model.lastError = strings.TrimPrefix(message.Detail, "rote-review: ")
 		if model.lastError == "" {
 			model.lastError = "rote-review: " + message.Err.Error()
 		}
-	} else if model.screening != nil && model.screening.PostedUrl != "" {
-		model.flash = "posted " + model.screening.PostedUrl
-	} else if model.screening != nil {
-		model.flash = fmt.Sprintf("rote-review finished %s in %s", model.screening.Label, formatAge(model.screening.StartedAt))
+	case run != nil && run.PostedUrl != "":
+		model.flash = "posted " + run.PostedUrl
+	case run != nil && (!message.IsTend || run.Touched):
+		model.flash = fmt.Sprintf("rote-review finished %s in %s", run.Label, formatAge(run.StartedAt))
 	}
-	model.screening = nil
+	*slot = nil
 	model.verdicts.Reload()
+	model.automations.Reload()
 }
 
 // screenSelected checks the selected PR, re-screening a head that already has a verdict.
@@ -140,16 +182,24 @@ func (model *Model) screenSelected(pullRequest PullRequest) {
 	model.startScreening(fmt.Sprintf("#%d", pullRequest.Number), []int{pullRequest.Number}, arguments...)
 }
 
+// renderScreeningStatus shows the runs in progress; a background tend pass only once it
+// is working on a PR.
 func (model Model) renderScreeningStatus() string {
-	if model.screening == nil {
-		return ""
+	var parts []string
+	for _, run := range []*Screening{model.screening, model.tending} {
+		if run != nil && (run != model.tending || len(run.Progress) > 0) {
+			parts = append(parts, fmt.Sprintf("rote-review %s %s", run.Label, formatAge(run.StartedAt)))
+		}
 	}
-	return stylePending.Render(fmt.Sprintf("rote-review %s %s", model.screening.Label, formatAge(model.screening.StartedAt)))
+	return stylePending.Render(strings.Join(parts, " · "))
 }
 
-func renderReview(pullRequest PullRequest, verdicts Verdicts, screening *Screening) []segment {
-	if screening != nil {
-		if progress, found := screening.Progress[pullRequest.Number]; found {
+func renderReview(pullRequest PullRequest, verdicts Verdicts, runs ...*Screening) []segment {
+	for _, run := range runs {
+		if run == nil {
+			continue
+		}
+		if progress, found := run.Progress[pullRequest.Number]; found {
 			if progress.ChunksTotal > 0 {
 				return []segment{{fmt.Sprintf("⟳ %d/%d", progress.ChunksDone, progress.ChunksTotal), stylePending}}
 			}

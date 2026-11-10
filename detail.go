@@ -21,6 +21,9 @@ func (model Model) renderDetailPane() string {
 	} else if verdictLines := renderVerdictDetail(row.PullRequest, model.verdicts, rightWidth); len(verdictLines) > 0 {
 		right = verdictLines
 	}
+	if row, hasRow := model.selectedRow(); hasRow && row.MyStatus == MyStatusAuthor && row.PullRequest.isOpen() {
+		right = append(renderAutomationDetail(model.automations.Lookup(row.PullRequest.Number), rightWidth), right...)
+	}
 	lines := make([]string, detailHeight-1)
 	for index := range lines {
 		var leftLine, rightLine string

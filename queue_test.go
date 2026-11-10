@@ -117,3 +117,14 @@ func TestHideStackedKeepsOnlyPullRequestsIntoMain(t *testing.T) {
 		t.Fatalf("expected a stacked PR only when stacked PRs are shown")
 	}
 }
+
+func TestDraftsAndMineTabs(t *testing.T) {
+	draft, _ := BuildQueueRow(PullRequest{Author: "jazeee", State: PullRequestDraft, BaseRef: "main"}, viewer, time.Time{})
+	ready, _ := BuildQueueRow(PullRequest{Author: "jazeee", State: PullRequestOpen, BaseRef: "main"}, viewer, time.Time{})
+	if !belongsToView(draft, ViewDrafts, viewFilter{}) || belongsToView(ready, ViewDrafts, viewFilter{}) {
+		t.Fatalf("Drafts holds only my drafts")
+	}
+	if !belongsToView(draft, ViewMine, viewFilter{}) || !belongsToView(ready, ViewMine, viewFilter{}) {
+		t.Fatalf("Mine holds all my open PRs, drafts included")
+	}
+}

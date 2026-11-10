@@ -37,7 +37,8 @@ hidden except in Mine.
 | Inbox   | Unread: you have not reviewed since the latest request, and not marked seen. Stacked PRs (base not `main`) are hidden until you press `n`; the header counts them |
 | Waiting | Open PRs where a request to you or your team is still pending          |
 | All     | Every PR that requested you or your teams in the window                |
-| Mine    | Your unmerged PRs without a `WIP` label, with their pending reviewers  |
+| Drafts  | Your open drafts without a `WIP` label                                  |
+| Mine    | Your unmerged PRs without a `WIP` label, drafts included, with their pending reviewers |
 
 ## Columns
 
@@ -74,7 +75,7 @@ newer review request makes it unread again, even after a local dismissal.
 | Key | Action |
 |-----|--------|
 | `j`/`k` `↑`/`↓` `pgup`/`pgdn` `g`/`G` | move |
-| `tab` / `shift+tab` / `1`–`4` | switch view |
+| `tab` / `shift+tab` / `1`–`5` | switch view |
 | `o` / `enter` | open the PR in the browser |
 | `p` | open pi (tmux split, new terminal) in a worktree on the PR head branch |
 | `s` | screen the selected PR with `rote-review check --always` (re-screens with `--fresh` when its head already has a verdict) |
@@ -86,9 +87,21 @@ newer review request makes it unread again, even after a local dismissal.
 | `u` | undo the last seen/all-seen |
 | `d` | toggle drafts only for the current tab (tab shows ✎) |
 | `n` | toggle stacked PRs (base not `main`) for the current tab; hidden by default in Inbox only |
+| `a` / `D` | on your own PR: resume rote-review's feedback automation (resetting its loop count), or move the PR to draft and pause it |
 | `/` | filter the current tab (regex, case-insensitive; literal fallback; tab shows /); `esc` clears |
 | `y` | copy the PR URL |
 | `r` / `R` | refresh now / rescan the whole window (queued if a scan is running) |
 | click | select a row (double-click opens it), or switch to a tab; the wheel moves a page |
 | `m` | toggle mouse capture |
 | `q` | quit |
+
+## Feedback automation on your PRs
+
+Unless started with `--tend=false`, review-queue runs `rote-review tend` in the
+background every 3 minutes (its own run slot, so `s`, `S`, and `c` are never blocked).
+For each of your open PRs, pi addresses open review feedback (commits, pushes, replies,
+and resolves), and drafts are marked ready once Copilot recommends approving the head.
+Each PR gets 5 loops; then it turns `manual` until you press `a` (resume) or `D` (draft).
+The **Me** column shows `auto`, `auto 2/5`, or `manual`, a working PR shows `⟳ fix` or
+`⟳ ready` in Review, and the detail pane shows the last loop's result.
+

@@ -12,10 +12,11 @@ const (
 	ViewInbox   ViewKind = "Inbox"
 	ViewWaiting ViewKind = "Waiting"
 	ViewAll     ViewKind = "All"
+	ViewDrafts  ViewKind = "Drafts"
 	ViewMine    ViewKind = "Mine"
 )
 
-var views = []ViewKind{ViewInbox, ViewWaiting, ViewAll, ViewMine}
+var views = []ViewKind{ViewInbox, ViewWaiting, ViewAll, ViewDrafts, ViewMine}
 
 type viewFilter struct {
 	draftsOnly bool
@@ -43,6 +44,8 @@ func belongsToView(row QueueRow, view ViewKind, filter viewFilter) bool {
 		return !isMine && row.PullRequest.isOpen() && !row.Settled() && row.MyStatus != MyStatusReviewed
 	case ViewAll:
 		return !isMine
+	case ViewDrafts:
+		return isMine && isDraft && !row.PullRequest.hasLabel("WIP")
 	default:
 		return isMine && row.PullRequest.State != PullRequestMerged && !row.PullRequest.hasLabel("WIP")
 	}
