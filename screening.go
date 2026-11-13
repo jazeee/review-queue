@@ -131,6 +131,8 @@ func (model *Model) applyScreeningProgress(message screeningProgressMsg) {
 		progress.Stage = "post"
 	case strings.HasPrefix(message.Event, "addressing"):
 		progress.Stage = "fix"
+	case strings.HasPrefix(message.Event, "merging"):
+		progress.Stage = "merge"
 	case strings.HasPrefix(message.Event, "marking ready"):
 		progress.Stage = "ready"
 	case strings.HasPrefix(message.Event, "posted "):
