@@ -54,6 +54,10 @@ func TestTendProgressHasItsOwnSlot(t *testing.T) {
 	if model.tending.Progress[7].Stage != "fix" || model.screening.Progress[8].Stage != "fetch" {
 		t.Fatalf("tend progress leaked between slots: %+v %+v", model.tending, model.screening)
 	}
+	model.applyScreeningProgress(screeningProgressMsg{IsTend: true, Number: 7, Event: "merging main to resolve conflicts (loop 2/5)"})
+	if model.tending.Progress[7].Stage != "merge" {
+		t.Fatalf("merging shows as merge: %+v", model.tending.Progress[7])
+	}
 	model.applyScreeningProgress(screeningProgressMsg{IsTend: true, Number: 7, Event: "done: pushed 0123456789; replied to 2 threads, resolved 2"})
 	if _, running := model.tending.Progress[7]; running || !model.tending.Touched {
 		t.Fatalf("finished tend loop still shown: %+v", model.tending)

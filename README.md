@@ -99,9 +99,10 @@ newer review request makes it unread again, even after a local dismissal.
 
 Unless started with `--tend=false`, review-queue runs `rote-review tend` in the
 background every 3 minutes (its own run slot, so `s`, `S`, and `c` are never blocked).
-For each of your open PRs, pi addresses open review feedback (commits, pushes, replies,
-and resolves), and drafts are marked ready once Copilot recommends approving the head.
+For each of your open PRs, pi resolves merge conflicts with the base branch, addresses
+open review feedback (commits, pushes, replies, resolves, and re-requests review), and
+drafts are marked ready once Copilot recommends approving the head.
 Each PR gets 5 loops; then it turns `manual` until you press `a` (resume) or `D` (draft).
-The **Me** column shows `auto`, `auto 2/5`, or `manual`, a working PR shows `⟳ fix` or
+The **Me** column shows `auto`, `auto 2/5`, or `manual`, a working PR shows `⟳ fix`, `⟳ merge`, or
 `⟳ ready` in Review, and the detail pane shows the last loop's result.
 
